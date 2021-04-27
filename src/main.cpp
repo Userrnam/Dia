@@ -2,6 +2,8 @@
 #include <SFML/Graphics.hpp>
 
 
+#define MAX_SELECT_DISTANCE 20
+
 struct Line
 {
 	sf::Vector2f p[2];
@@ -15,8 +17,24 @@ struct Line
 	}
 };
 
+enum class AppMode
+{
+	Edit,
+	Create
+};
+
+std::string modeAsString(AppMode mode)
+{
+	if (mode == AppMode::Edit) return "Edit Mode";
+	if (mode == AppMode::Create) return "Create Mode";
+	return "Error";
+}
+
 struct AppInfo
 {
+	AppMode mode = AppMode::Create;
+	int characterSize = 30;
+	sf::Font font;
 	sf::RenderWindow *window;
 	sf::Vector2i windowSize;
 	int gridSize = 50;
@@ -113,12 +131,28 @@ void drawGrid(AppInfo *info)
 	info->window->draw(va);
 }
 
+void drawAppMode(AppInfo *info)
+{
+	sf::Text text;
+	text.setFont(info->font);
+	text.setCharacterSize(info->characterSize);
+	text.setPosition(10, 10);
+	text.setFillColor(sf::Color::Black);
+
+	text.setString(modeAsString(info->mode));
+
+	info->window->draw(text);
+}
+
 const auto defaultWindowSize = sf::Vector2i(800, 600);
 
 enum class State
 {
 	None,
-	CreatingNewLine
+	CreatingNewLine,
+	Editing,
+	MovingLine,
+	MovingLinePoint
 };
 
 sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
@@ -127,6 +161,32 @@ sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
 	p.x = ((int)(pos.x + info->gridSize/2) / info->gridSize) * info->gridSize;
 	p.y = ((int)(pos.y + info->gridSize/2) / info->gridSize) * info->gridSize;
 	return p;
+}
+
+float d2(sf::Vector2f v1, sf::Vector2f v2)
+{
+	sf::Vector2f v = v1 - v2;
+	return v.x * v.x + v.y * v.y;
+}
+
+sf::Vector2f *getClosestPoint(AppInfo *info, sf::Vector2f pos, float *distance2)
+{
+	sf::Vector2f *res = &info->lines[0].p[0];
+	float mind = 1e5;
+	for (auto &line : info->lines)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			float d = d2(pos, line.p[i]);
+			if (d < mind)
+			{
+				mind = d;
+				res = &line.p[i];
+			}
+		}
+	}
+	*distance2 = mind;
+	return res;
 }
 
 int main()
@@ -139,8 +199,11 @@ int main()
 	app.window = &window;
 	app.windowSize = defaultWindowSize;
 
+	app.font.loadFromFile("resources/Hack-Regular.ttf");
+
 	State state;
 	state = State::None;
+	sf::Vector2f *pVec = nullptr;
 
 	while (window.isOpen())
 	{
@@ -165,9 +228,14 @@ int main()
 
 				case sf::Event::MouseMoved:
 				{
+					sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
 					if (state == State::CreatingNewLine)
 					{
-						app.lines.back().p[1] = snap(&app, sf::Vector2f(e.mouseMove.x, e.mouseMove.y));
+						app.lines.back().p[1] = snap(&app, mousePos);
+					}
+					else if (state == State::MovingLinePoint)
+					{
+						*pVec = snap(&app, mousePos);
 					}
 
 					break;
@@ -182,6 +250,16 @@ int main()
 						app.lines.push_back({});
 						app.lines.back().p[0] = snap(&app, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
 						app.lines.back().p[1] = app.lines.back().p[0];
+					}
+					else if (state == State::Editing)
+					{
+						float dist2;
+						sf::Vector2f *p = getClosestPoint(&app, sf::Vector2f(e.mouseButton.x, e.mouseButton.y), &dist2);
+						if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+						{
+							state = State::MovingLinePoint;
+							pVec = p;
+						}
 					}
 
 					break;
@@ -198,7 +276,27 @@ int main()
 							app.lines.pop_back();
 						}
 					}
+					else if (state == State::MovingLinePoint)
+					{
+						state = State::Editing;
+						pVec = nullptr;
+					}
 
+					break;
+				}
+
+				case sf::Event::KeyPressed:
+				{
+					if (e.key.code == sf::Keyboard::E)
+					{
+						app.mode = AppMode::Edit;
+						state = State::Editing;
+					}
+					else if (e.key.code == sf::Keyboard::C)
+					{
+						app.mode = AppMode::Create;
+						state = State::None;
+					}
 					break;
 				}
 
@@ -210,6 +308,7 @@ int main()
 
 		drawGrid(&app);
 		drawLines(&app);
+		drawAppMode(&app);
 
 		window.display();
 	}
