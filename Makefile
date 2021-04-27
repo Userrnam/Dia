@@ -1,12 +1,24 @@
 all: a.out
 
-bin/main.o: src/main.cpp
+bin/utils.o: src/utils.cpp
+	clang++ -g -c src/utils.cpp -o bin/utils.o -std=c++11 -g
+
+bin/CreateMode.o: src/CreateMode.cpp
+	clang++ -g -c src/CreateMode.cpp -o bin/CreateMode.o -std=c++11 -g
+
+bin/EditMode.o: src/EditMode.cpp
+	clang++ -g -c src/EditMode.cpp -o bin/EditMode.o -std=c++11 -g
+
+bin/DeleteMode.o: src/DeleteMode.cpp
+	clang++ -g -c src/DeleteMode.cpp -o bin/DeleteMode.o -std=c++11 -g
+
+bin/main.o: src/main.cpp 
 	clang++ -g -c src/main.cpp -o bin/main.o -std=c++11 -g
 
 clean:
 	rm bin/*
 
-a.out: bin/main.o
+a.out: bin/main.o bin/utils.o bin/CreateMode.o bin/EditMode.o bin/DeleteMode.o
 	clang++ -lsfml-graphics -lsfml-window -lsfml-system bin/*.o -o bin/a.out -g
 
 run: a.out

@@ -1,114 +1,14 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 
+#include "AppInfo.hpp"
 
-#define MAX_SELECT_DISTANCE 20
-#define MAX_DELETE_DISTANCE 20
-#define EPS 1e-4
+#include "DeleteMode.hpp"
+#include "EditMode.hpp"
+#include "CreateMode.hpp"
 
-float d2(sf::Vector2f v1, sf::Vector2f v2)
-{
-	sf::Vector2f v = v1 - v2;
-	return v.x * v.x + v.y * v.y;
-}
+#include "utils.hpp"
 
-
-struct Line
-{
-	sf::Vector2f p[2];
-	sf::Color color = sf::Color::Black;
-	float width = 4;
-
-	void print()
-	{
-		std::cout << "{" << p[0].x << ";" << p[0].y << "}; ";
-		std::cout << "{" << p[1].x << ";" << p[1].y << "}";
-	}
-};
-
-struct Circle
-{
-	// circle is defined by origin and point on circumference
-	sf::Vector2f p[2];
-	sf::Color outlineColor = sf::Color::Black;
-	sf::Color color = sf::Color(0,0,0,0);
-	float outlineThickness = 4;
-};
-
-bool same(sf::Vector2f v1, sf::Vector2f v2)
-{
-	return fabs(v1.x - v2.x) < EPS && fabs(v1.y - v2.y) < EPS;
-}
-
-#define MODE_NUMBER(mode, number, active)\
-	number << 4 | active << 3 | mode
-
-#define CREATE_MODE 1
-#define EDIT_MODE   2
-#define DELETE_MODE 3
-
-enum class State
-{
-	CLine            = MODE_NUMBER(CREATE_MODE, 0, 0),
-	CNewLine         = MODE_NUMBER(CREATE_MODE, 0, 1),
-	CCircle          = MODE_NUMBER(CREATE_MODE, 1, 0),
-	CNewCircle       = MODE_NUMBER(CREATE_MODE, 1, 1),
-
-	EPoint           = MODE_NUMBER(EDIT_MODE, 0, 0),
-	EMovingPoint     = MODE_NUMBER(EDIT_MODE, 0, 1),
-//	EMovingLine      = MODE_NUMBER(EDIT_MODE, 0, 1),
-
-	DNone            = MODE_NUMBER(DELETE_MODE, 0, 0),
-};
-
-int Mode(State state)
-{
-	return (int)state & 0b111;
-}
-
-std::string stateAsString(State state)
-{
-	switch (state)
-	{
-	case State::CLine:
-	case State::CNewLine:
-		return "Create Line";
-	case State::CCircle:
-	case State::CNewCircle:
-		return "Create Circle";
-	case State::EPoint:
-		return "Edit Mode";
-//	case State::EMovingLine:
-//		return "Edit Line";
-	case State::EMovingPoint:
-		return "Edit Line Point";
-	case State::DNone:
-		return "Delete Mode";
-	default: {}
-	}
-	return "Error";
-}
-
-struct AppInfo
-{
-	State state = State::CLine;
-	int characterSize = 30;
-	sf::Font font;
-	sf::RenderWindow *window;
-	sf::Vector2i windowSize;
-	int gridSize = 50;
-
-	sf::Vector2f *pVec;
-
-	std::vector<Line> lines;
-	std::vector<Circle> circles;
-};
-
-sf::Vector2f normalize(sf::Vector2f v)
-{
-	float l = sqrt(v.x * v.x + v.y * v.y);
-	return v / l;
-}
 
 void drawCircles(AppInfo *info)
 {
@@ -219,227 +119,12 @@ void drawAppMode(AppInfo *info)
 	text.setPosition(10, 10);
 	text.setFillColor(sf::Color::Black);
 
-	text.setString(stateAsString(info->state));
+	text.setString(info->pCurrentMode->getModeDescription());
 
 	info->window->draw(text);
 }
 
 const auto defaultWindowSize = sf::Vector2i(800, 600);
-
-sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
-{
-	sf::Vector2f p;
-	p.x = ((int)(pos.x + info->gridSize/2) / info->gridSize) * info->gridSize;
-	p.y = ((int)(pos.y + info->gridSize/2) / info->gridSize) * info->gridSize;
-	return p;
-}
-
-sf::Vector2f *getClosestPoint(AppInfo *info, sf::Vector2f pos, float *distance2, Line **pline = nullptr)
-{
-	sf::Vector2f *res = nullptr;
-	Line *l = nullptr;
-	float mind = 1e15;
-	for (auto &line : info->lines)
-	{
-		for (int i = 0; i < 2; ++i)
-		{
-			float d = d2(pos, line.p[i]);
-			if (d < mind)
-			{
-				mind = d;
-				res = &line.p[i];
-				l = &line;
-			}
-		}
-	}
-	*distance2 = mind;
-	if (pline)
-	{
-		*pline = l;
-	}
-	return res;
-}
-
-float d2line(Line& l, sf::Vector2f pos)
-{
-	float a2 = d2(l.p[0], pos);
-	float b2 = d2(l.p[1], pos);
-	float c2 = d2(l.p[0], l.p[1]);
-
-	float c = sqrt(c2);
-
-	float t = (a2 - b2 - c2)/(2*c);
-
-	return b2 - t*t;
-}
-
-Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2)
-{
-	float d;
-	Line *l;
-	getClosestPoint(info, pos, &d, &l);
-
-	for (auto& line : info->lines)
-	{
-		float dd = d2line(line, pos);
-		if (dd < d)
-		{
-			d = dd;
-			l = &line;
-		}
-	}
-
-	*distance2 = d;
-
-	return l;
-}
-
-void handleEditMode(AppInfo *info, sf::Event& e)
-{
-	switch (e.type)
-	{
-		case sf::Event::MouseMoved:
-		{
-			sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
-			if (info->state == State::EMovingPoint)
-			{
-				*info->pVec = snap(info, mousePos);
-			}
-
-			break;
-		}
-
-		case sf::Event::MouseButtonPressed:
-		{
-			if (info->state == State::EPoint)
-			{
-				float dist2;
-				sf::Vector2f *p = getClosestPoint(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y), &dist2);
-				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
-				{
-					info->state = State::EMovingPoint;
-					info->pVec = p;
-				}
-			}
-
-			break;
-		}
-
-		case sf::Event::MouseButtonReleased:
-		{
-			if (info->state == State::EMovingPoint)
-			{
-				info->state = State::EPoint;
-				info->pVec = nullptr;
-				// FIXME: 2 points of the same line may be the same.
-				// If this happens, the line should be deleted
-			}
-
-			break;
-		}
-
-		default: {}
-	}
-}
-
-void handleCreateMode(AppInfo *info, sf::Event& e)
-{
-	switch (e.type)
-	{
-		case sf::Event::MouseMoved:
-		{
-			sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
-			if (info->state == State::CNewLine)
-			{
-				info->lines.back().p[1] = snap(info, mousePos);
-			}
-			else if (info->state == State::CNewCircle)
-			{
-				info->circles.back().p[1] = snap(info, mousePos);
-			}
-			break;
-		}
-
-		case sf::Event::MouseButtonPressed:
-		{
-			if (info->state == State::CLine)
-			{
-				info->state = State::CNewLine;
-
-				info->lines.push_back({});
-				info->lines.back().p[0] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
-				info->lines.back().p[1] = info->lines.back().p[0];
-			}
-			else if (info->state == State::CCircle)
-			{
-				info->state = State::CNewCircle;
-
-				info->circles.push_back({});
-				info->circles.back().p[0] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
-				info->circles.back().p[1] = info->circles.back().p[0];
-			}
-
-			break;
-		}
-
-		case sf::Event::MouseButtonReleased:
-		{
-			if (info->state == State::CNewLine)
-			{
-				info->lines.back().p[1] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
-				info->state = State::CLine;
-				if (same(info->lines.back().p[0], info->lines.back().p[1]))
-				{
-					info->lines.pop_back();
-				}
-			}
-			else if (info->state == State::CNewCircle)
-			{
-				info->circles.back().p[1] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
-				info->state = State::CCircle;
-				if (same(info->circles.back().p[0], info->circles.back().p[1]))
-				{
-					info->circles.pop_back();
-				}
-			}
-
-			break;
-		}
-
-		case sf::Event::KeyPressed:
-		{
-			if (e.key.code == sf::Keyboard::L)
-			{
-				info->state = State::CLine;
-			}
-			else if (e.key.code == sf::Keyboard::C)
-			{
-				info->state = State::CCircle;
-			}
-			break;
-		}
-
-		default: {}
-	}
-}
-
-void handleDeleteMode(AppInfo *info, sf::Event& e)
-{
-	if (e.type == sf::Event::MouseButtonPressed)
-	{
-		sf::Vector2f mousePos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
-		float dist2;
-		Line *l = getClosestLine(info, mousePos, &dist2);
-
-		// remove line
-		if (dist2 < MAX_DELETE_DISTANCE * MAX_DELETE_DISTANCE)
-		{
-			int index = l - info->lines.data();
-			
-			info->lines.erase(info->lines.begin() + index);
-		}
-	}
-}
 
 int main()
 {
@@ -452,6 +137,13 @@ int main()
 	app.windowSize = defaultWindowSize;
 
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
+
+	app.modes.push_back(new CreateMode(sf::Keyboard::C));
+	app.modes.push_back(new EditMode(sf::Keyboard::E));
+	app.modes.push_back(new DeleteMode(sf::Keyboard::D));
+
+	app.pCurrentMode = app.modes[0];
+	app.pCurrentMode->onEnter(&app);
 
 	while (window.isOpen())
 	{
@@ -470,43 +162,25 @@ int main()
 
 			if (e.type == sf::Event::KeyPressed)
 			{
-				int mode = Mode(app.state);
-				if (e.key.code == sf::Keyboard::C && mode != CREATE_MODE)
+				bool modeSwitched = false;
+				for (auto& mi : app.modes)
 				{
-					app.state = State::CLine;
-					continue;
+					if (e.key.code == mi->key && app.pCurrentMode->key != e.key.code)
+					{
+						mi->onEnter(&app);
+						app.pCurrentMode->onExit(&app);
+						app.pCurrentMode = mi;
+						modeSwitched = true;
+						break;
+					}
 				}
-				if (e.key.code == sf::Keyboard::E && mode != EDIT_MODE)
+				if (modeSwitched)
 				{
-					app.state = State::EPoint;
-					continue;
-				}
-				if (e.key.code == sf::Keyboard::D && mode != DELETE_MODE)
-				{
-					app.state = State::DNone;
 					continue;
 				}
 			}
 
-			switch (Mode(app.state))
-			{
-				case CREATE_MODE:
-				{
-					handleCreateMode(&app, e);
-					break;
-				}
-				case EDIT_MODE:
-				{
-					handleEditMode(&app, e);
-					break;
-				}
-				case DELETE_MODE:
-				{
-					handleDeleteMode(&app, e);
-					break;
-				}
-			}
-
+			app.pCurrentMode->onEvent(&app, e);
 		}
 
 		window.clear(sf::Color::White);
