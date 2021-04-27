@@ -124,8 +124,8 @@ enum class State
 sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
 {
 	sf::Vector2f p;
-	p.x = ((int)pos.x / info->gridSize) * info->gridSize;
-	p.y = ((int)pos.y / info->gridSize) * info->gridSize;
+	p.x = ((int)(pos.x + info->gridSize/2) / info->gridSize) * info->gridSize;
+	p.y = ((int)(pos.y + info->gridSize/2) / info->gridSize) * info->gridSize;
 	return p;
 }
 
