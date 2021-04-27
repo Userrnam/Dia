@@ -338,20 +338,6 @@ void handleEditMode(AppInfo *info, sf::Event& e)
 			break;
 		}
 
-		// TODO move this from here
-		case sf::Event::KeyPressed:
-		{
-			if (e.key.code == sf::Keyboard::C)
-			{
-				info->state = State::CLine;
-			}
-			if (e.key.code == sf::Keyboard::D)
-			{
-				info->state = State::DNone;
-			}
-			break;
-		}
-
 		default: {}
 	}
 }
@@ -428,15 +414,7 @@ void handleCreateMode(AppInfo *info, sf::Event& e)
 			}
 			else if (e.key.code == sf::Keyboard::C)
 			{
-				info->state = State::CCircle;info->state = State::CCircle;
-			}
-			else if (e.key.code == sf::Keyboard::E)
-			{
-				info->state = State::EPoint;
-			}
-			else if (e.key.code == sf::Keyboard::D)
-			{
-				info->state = State::DNone;
+				info->state = State::CCircle;
 			}
 			break;
 		}
@@ -459,18 +437,6 @@ void handleDeleteMode(AppInfo *info, sf::Event& e)
 			int index = l - info->lines.data();
 			
 			info->lines.erase(info->lines.begin() + index);
-		}
-	}
-
-	if (e.type == sf::Event::KeyPressed)
-	{
-		if (e.key.code == sf::Keyboard::E)
-		{
-			info->state = State::EPoint;
-		}
-		else if (e.key.code == sf::Keyboard::C)
-		{
-			info->state = State::CLine;
 		}
 	}
 }
@@ -498,6 +464,28 @@ int main()
 				sf::FloatRect visibleArea(0, 0, e.size.width, e.size.height);
 				window.setView(sf::View(visibleArea));
 				app.windowSize = sf::Vector2i(e.size.width, e.size.height);
+
+				continue;
+			}
+
+			if (e.type == sf::Event::KeyPressed)
+			{
+				int mode = Mode(app.state);
+				if (e.key.code == sf::Keyboard::C && mode != CREATE_MODE)
+				{
+					app.state = State::CLine;
+					continue;
+				}
+				if (e.key.code == sf::Keyboard::E && mode != EDIT_MODE)
+				{
+					app.state = State::EPoint;
+					continue;
+				}
+				if (e.key.code == sf::Keyboard::D && mode != DELETE_MODE)
+				{
+					app.state = State::DNone;
+					continue;
+				}
 			}
 
 			switch (Mode(app.state))
