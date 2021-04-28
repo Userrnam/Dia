@@ -16,12 +16,12 @@ void drawCircles(AppInfo *info)
 
 	for (auto &circle : info->circles)
 	{
-		shape.setRadius(sqrt(d2(circle.p[0], circle.p[1])) - circle.outlineThickness/2);
+		shape.setRadius(circle.radius - circle.outlineThickness/2);
 		shape.setOutlineThickness(circle.outlineThickness);
 		shape.setOutlineColor(circle.outlineColor);
 		shape.setFillColor(circle.color);
 
-		shape.setPosition(circle.p[0]);
+		shape.setPosition(circle.center);
 		shape.setOrigin(shape.getRadius(), shape.getRadius());
 
 		info->window->draw(shape);
@@ -162,6 +162,10 @@ int main()
 
 			if (e.type == sf::Event::KeyPressed)
 			{
+				if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
+				{
+					app.shiftPressed = true;
+				}
 				bool modeSwitched = false;
 				for (auto& mi : app.modes)
 				{
@@ -177,6 +181,13 @@ int main()
 				if (modeSwitched)
 				{
 					continue;
+				}
+			}
+			else if (e.type == sf::Event::KeyReleased)
+			{
+				if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
+				{
+					app.shiftPressed = false;
 				}
 			}
 

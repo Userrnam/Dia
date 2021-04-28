@@ -13,12 +13,28 @@ void DeleteMode::onEvent(struct AppInfo *info, sf::Event& e)
 		float dist2;
 		Line *l = getClosestLine(info, mousePos, &dist2);
 
-		// remove line
-		if (dist2 < MAX_DELETE_DISTANCE * MAX_DELETE_DISTANCE)
+		float dist3;
+		Circle *c = getClosestCircle(info, mousePos, &dist3);
+
+		if (dist2 < dist3)
 		{
-			int index = l - info->lines.data();
-			
-			info->lines.erase(info->lines.begin() + index);
+			// remove line
+			if (dist2 < MAX_DELETE_DISTANCE * MAX_DELETE_DISTANCE)
+			{
+				int index = l - info->lines.data();
+				
+				info->lines.erase(info->lines.begin() + index);
+			}
+		}
+		else
+		{
+			// remove circle
+			if (dist3 < MAX_DELETE_DISTANCE * MAX_DELETE_DISTANCE)
+			{
+				int index = c - info->circles.data();
+				
+				info->circles.erase(info->circles.begin() + index);
+			}
 		}
 	}
 }

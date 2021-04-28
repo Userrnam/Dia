@@ -1,6 +1,6 @@
 #include "utils.hpp"
 
-sf::Vector2f *getClosestPoint(AppInfo *info, sf::Vector2f pos, float *distance2, Line **pline)
+sf::Vector2f *getClosestLinePoint(AppInfo *info, sf::Vector2f pos, float *distance2, Line **pline)
 {
 	sf::Vector2f *res = nullptr;
 	Line *l = nullptr;
@@ -26,6 +26,28 @@ sf::Vector2f *getClosestPoint(AppInfo *info, sf::Vector2f pos, float *distance2,
 	return res;
 }
 
+Circle *getClosestCircle(AppInfo *info, sf::Vector2f pos, float *distance2)
+{
+	float mind = 1e15;
+	Circle *res = nullptr;
+	
+	for (auto& circle : info->circles)
+	{
+		float d2center2 = d2(circle.center, pos);
+		float d = sqrt(d2center2) - circle.radius;
+		float d2 = d*d;
+		if (d2 < mind)
+		{
+			mind = d2;
+			res = &circle;
+		}
+	}
+
+	*distance2 = mind;
+
+	return res;
+}
+
 float d2line(Line& l, sf::Vector2f pos)
 {
 	float a2 = d2(l.p[0], pos);
@@ -43,7 +65,7 @@ Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2)
 {
 	float d;
 	Line *l;
-	getClosestPoint(info, pos, &d, &l);
+	getClosestLinePoint(info, pos, &d, &l);
 
 	for (auto& line : info->lines)
 	{

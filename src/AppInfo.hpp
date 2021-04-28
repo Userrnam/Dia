@@ -19,7 +19,9 @@ struct Line
 struct Circle
 {
 	// circle is defined by origin and point on circumference
-	sf::Vector2f p[2];
+	//sf::Vector2f p[2];
+	sf::Vector2f center;
+	float radius;
 	sf::Color outlineColor = sf::Color::Black;
 	sf::Color color = sf::Color(0,0,0,0);
 	float outlineThickness = 4;
@@ -83,6 +85,8 @@ struct AppInfo
 	sf::Vector2i windowSize;
 	int gridSize = 50;
 	Mode *pCurrentMode;
+
+	bool shiftPressed = false;
 
 
 	std::vector<Line> lines;

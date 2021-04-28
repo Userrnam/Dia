@@ -12,6 +12,10 @@ struct CreateModeInfo
 	State state = Line;
 };
 
+float calcRadius(sf::Vector2f center, sf::Vector2f point)
+{
+	return sqrt(d2(center, point));
+}
 
 void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 	auto *pd = data.as<CreateModeInfo>();
@@ -26,7 +30,7 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 			}
 			else if (pd->state == CreateModeInfo::NewCircle)
 			{
-				info->circles.back().p[1] = snap(info, mousePos);
+				info->circles.back().radius = calcRadius(info->circles.back().center, snap(info, mousePos));
 			}
 			break;
 		}
@@ -46,8 +50,8 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 				pd->state = CreateModeInfo::NewCircle;
 
 				info->circles.push_back({});
-				info->circles.back().p[0] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
-				info->circles.back().p[1] = info->circles.back().p[0];
+				info->circles.back().center = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
+				info->circles.back().radius = 0;
 			}
 
 			break;
@@ -66,9 +70,11 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 			}
 			else if (pd->state == CreateModeInfo::NewCircle)
 			{
-				info->circles.back().p[1] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
+				info->circles.back().radius = calcRadius(info->circles.back().center,
+						snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y)));
+
 				pd->state = CreateModeInfo::Circle;
-				if (same(info->circles.back().p[0], info->circles.back().p[1]))
+				if (info->circles.back().radius < EPS)
 				{
 					info->circles.pop_back();
 				}

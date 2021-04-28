@@ -1,18 +1,18 @@
 all: a.out
 
-bin/utils.o: src/utils.cpp
+bin/utils.o: src/utils.cpp src/utils.hpp
 	clang++ -g -c src/utils.cpp -o bin/utils.o -std=c++11 -g
 
-bin/CreateMode.o: src/CreateMode.cpp
+bin/CreateMode.o: src/CreateMode.cpp src/CreateMode.hpp src/utils.hpp
 	clang++ -g -c src/CreateMode.cpp -o bin/CreateMode.o -std=c++11 -g
 
-bin/EditMode.o: src/EditMode.cpp
+bin/EditMode.o: src/EditMode.cpp src/EditMode.hpp src/utils.hpp
 	clang++ -g -c src/EditMode.cpp -o bin/EditMode.o -std=c++11 -g
 
-bin/DeleteMode.o: src/DeleteMode.cpp
+bin/DeleteMode.o: src/DeleteMode.cpp src/DeleteMode.hpp src/utils.hpp
 	clang++ -g -c src/DeleteMode.cpp -o bin/DeleteMode.o -std=c++11 -g
 
-bin/main.o: src/main.cpp 
+bin/main.o: src/main.cpp src/DeleteMode.hpp src/utils.hpp src/CreateMode.hpp src/EditMode.hpp
 	clang++ -g -c src/main.cpp -o bin/main.o -std=c++11 -g
 
 clean:

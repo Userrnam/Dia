@@ -29,7 +29,9 @@ inline sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
 	return p;
 }
 
-sf::Vector2f *getClosestPoint(AppInfo *info, sf::Vector2f pos, float *distance2, Line **pline = nullptr);
+sf::Vector2f *getClosestLinePoint(AppInfo *info, sf::Vector2f pos, float *distance2, Line **pline = nullptr);
+Circle *getClosestCircle(AppInfo *info, sf::Vector2f pos, float *distance2);
+
 float d2line(Line& l, sf::Vector2f pos);
 Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2);
 

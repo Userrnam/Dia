@@ -10,10 +10,14 @@ struct EditInfo
 	enum State
 	{
 		Point,
-		MovingPoint
+		MovingPoint,
+
+		// this looks ugly
+		ChangingCircleRadius
 	};
 
 	State state = Point;
+	Circle *pCircle = nullptr;
 };
 
 void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
@@ -28,20 +32,39 @@ void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
 			{
 				*pd->pVec = snap(info, mousePos);
 			}
+			else if (pd->state == EditInfo::ChangingCircleRadius)
+			{
+				auto vec = snap(info, mousePos);
+				pd->pCircle->radius = sqrt(d2(vec, pd->pCircle->center));
+			}
 
 			break;
 		}
 
 		case sf::Event::MouseButtonPressed:
 		{
+			sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 			if (pd->state == EditInfo::Point)
 			{
 				float dist2;
-				sf::Vector2f *p = getClosestPoint(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y), &dist2);
+				sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2);
 				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
 				{
 					pd->state = EditInfo::MovingPoint;
 					pd->pVec = p;
+				}
+
+				float dist3;
+				Circle *p2 = getClosestCircle(info, pos, &dist3);
+				if (dist3 < dist2 && dist3 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+				{
+					pd->state = EditInfo::MovingPoint;
+					pd->pVec = &p2->center;
+					if (info->shiftPressed)
+					{
+						pd->state = EditInfo::ChangingCircleRadius;
+						pd->pCircle = p2;
+					}
 				}
 			}
 
@@ -56,6 +79,11 @@ void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
 				pd->pVec = nullptr;
 				// FIXME: 2 points of the same line may be the same.
 				// If this happens, the line should be deleted
+			}
+			else if (pd->state == EditInfo::ChangingCircleRadius)
+			{
+				pd->state = EditInfo::Point;
+				pd->pCircle = nullptr;
 			}
 
 			break;
@@ -81,6 +109,9 @@ std::string EditMode::getModeDescription()
 
 	if (pd->state == EditInfo::Point || pd->state == EditInfo::MovingPoint)
 		return "Edit Point";
+
+	if (pd->state == EditInfo::ChangingCircleRadius)
+		return "Change Circle Raidus";
 
 	return "Error";
 }
