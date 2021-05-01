@@ -6,6 +6,15 @@
 
 struct CreateMode : public Mode
 {
+	enum State {
+		Line,
+		NewLine,
+		Circle,
+		NewCircle
+	};
+
+	State state = Line;
+
 	CreateMode(sf::Keyboard::Key _k) : Mode(_k) {}
 
 	virtual void onEvent(struct AppInfo *info, sf::Event& e) override;

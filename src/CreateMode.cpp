@@ -1,16 +1,5 @@
 #include "CreateMode.hpp"
 
-struct CreateModeInfo
-{
-	enum State {
-		Line,
-		NewLine,
-		Circle,
-		NewCircle
-	};
-
-	State state = Line;
-};
 
 float calcRadius(sf::Vector2f center, sf::Vector2f point)
 {
@@ -18,17 +7,16 @@ float calcRadius(sf::Vector2f center, sf::Vector2f point)
 }
 
 void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
-	auto *pd = data.as<CreateModeInfo>();
 	switch (e.type)
 	{
 		case sf::Event::MouseMoved:
 		{
 			sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
-			if (pd->state == CreateModeInfo::NewLine)
+			if (state == NewLine)
 			{
 				info->lines.back().p[1] = snap(info, mousePos);
 			}
-			else if (pd->state == CreateModeInfo::NewCircle)
+			else if (state == NewCircle)
 			{
 				info->circles.back().radius = calcRadius(info->circles.back().center, snap(info, mousePos));
 			}
@@ -37,17 +25,17 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 
 		case sf::Event::MouseButtonPressed:
 		{
-			if (pd->state == CreateModeInfo::Line)
+			if (state == Line)
 			{
-				pd->state = CreateModeInfo::NewLine;
+				state = NewLine;
 
 				info->lines.push_back({});
 				info->lines.back().p[0] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
 				info->lines.back().p[1] = info->lines.back().p[0];
 			}
-			else if (pd->state == CreateModeInfo::Circle)
+			else if (state == Circle)
 			{
-				pd->state = CreateModeInfo::NewCircle;
+				state = NewCircle;
 
 				info->circles.push_back({});
 				info->circles.back().center = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
@@ -59,21 +47,21 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 
 		case sf::Event::MouseButtonReleased:
 		{
-			if (pd->state == CreateModeInfo::NewLine)
+			if (state == NewLine)
 			{
 				info->lines.back().p[1] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
-				pd->state = CreateModeInfo::Line;
+				state = Line;
 				if (same(info->lines.back().p[0], info->lines.back().p[1]))
 				{
 					info->lines.pop_back();
 				}
 			}
-			else if (pd->state == CreateModeInfo::NewCircle)
+			else if (state == NewCircle)
 			{
 				info->circles.back().radius = calcRadius(info->circles.back().center,
 						snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y)));
 
-				pd->state = CreateModeInfo::Circle;
+				state = Circle;
 				if (info->circles.back().radius < EPS)
 				{
 					info->circles.pop_back();
@@ -87,11 +75,11 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 		{
 			if (e.key.code == sf::Keyboard::L)
 			{
-				pd->state = CreateModeInfo::Line;
+				state = Line;
 			}
 			else if (e.key.code == sf::Keyboard::C)
 			{
-				pd->state = CreateModeInfo::Circle;
+				state = Circle;
 			}
 			break;
 		}
@@ -103,21 +91,20 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 
 void CreateMode::onEnter(struct AppInfo *)
 {
-	data.alloc<CreateModeInfo>();
+	state = Line;
 }
 
 void CreateMode::onExit(struct AppInfo *)
 {
-	data.dealloc();
+	state = Line;
 }
 
 std::string CreateMode::getModeDescription()
 {
-	auto *pd = data.as<CreateModeInfo>();
-	if (pd->state == CreateModeInfo::Line || pd->state == CreateModeInfo::NewLine)
+	if (state == Line || state == NewLine)
 		return "Create Line";
 
-	if (pd->state == CreateModeInfo::Circle || pd->state == CreateModeInfo::NewCircle)
+	if (state == Circle || state == NewCircle)
 		return "Create Circle";
 
 	return "Error";

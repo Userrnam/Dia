@@ -27,34 +27,6 @@ struct Circle
 	float outlineThickness = 4;
 };
 
-
-typedef void(*EventHandler)(struct AppInfo *, sf::Event &);
-typedef void(*ModeExit)(struct AppInfo *, struct ModeInfo *);
-typedef void(*ModeEnter)(struct AppInfo *, struct ModeInfo *);
-
-struct Data
-{
-	void *data = nullptr;
-
-	template<typename T>
-	void alloc()
-	{
-		data = malloc(sizeof(T));
-		new (data) T;
-	}
-
-	template<typename T>
-	T* as()
-	{
-		return (T *)data;
-	}
-
-	void dealloc()
-	{
-		free(data);
-	}
-};
-
 struct Mode
 {
 	sf::Keyboard::Key key;
@@ -65,8 +37,6 @@ struct Mode
 	virtual void onExit(struct AppInfo *)  = 0;
 	virtual void onEnter(struct AppInfo *) = 0;
 	virtual std::string getModeDescription() = 0;
-
-	Data data;
 };
 
 /*
