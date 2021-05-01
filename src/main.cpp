@@ -67,6 +67,20 @@ void drawLines(AppInfo *info)
 	info->window->draw(va);
 }
 
+void drawText(AppInfo *info)
+{
+	sf::RectangleShape rect;
+	rect.setFillColor(sf::Color(170, 170, 0, 50));
+
+	for (auto& t : info->texts)
+	{
+		rect.setPosition(t.bounding.left, t.bounding.top);
+		rect.setSize(sf::Vector2f(t.bounding.width, t.bounding.height));
+		info->window->draw(rect);
+		info->window->draw(t.text);
+	}
+}
+
 void drawGrid(AppInfo *info)
 {
 	// calculate total number of lines
@@ -124,6 +138,16 @@ void drawAppMode(AppInfo *info)
 	info->window->draw(text);
 }
 
+void drawSnappedPoint(AppInfo *info)
+{
+	sf::CircleShape circle;
+	circle.setFillColor(sf::Color::Red);
+	circle.setRadius(5);
+	circle.setOrigin(5, 5);
+	circle.setPosition(info->snappedPos);
+	info->window->draw(circle);
+}
+
 const auto defaultWindowSize = sf::Vector2i(800, 600);
 
 int main()
@@ -138,12 +162,12 @@ int main()
 
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
 
-	app.modes.push_back(new CreateMode(sf::Keyboard::C));
-	app.modes.push_back(new EditMode(sf::Keyboard::E));
-	app.modes.push_back(new DeleteMode(sf::Keyboard::D));
+	app.modes.push_back(new CreateMode(sf::Keyboard::C, &app));
+	app.modes.push_back(new EditMode(sf::Keyboard::E, &app));
+	app.modes.push_back(new DeleteMode(sf::Keyboard::D, &app));
 
 	app.pCurrentMode = app.modes[0];
-	app.pCurrentMode->onEnter(&app);
+	app.pCurrentMode->onEnter();
 
 	while (window.isOpen())
 	{
@@ -160,26 +184,29 @@ int main()
 				continue;
 			}
 
+			if (e.type == sf::Event::MouseMoved)
+			{
+				app.snappedPos = snap(&app, sf::Vector2f(e.mouseMove.x, e.mouseMove.y));
+			}
+
 			if (e.type == sf::Event::KeyPressed)
 			{
 				if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
 				{
 					app.shiftPressed = true;
 				}
-				bool modeSwitched = false;
-				for (auto& mi : app.modes)
+				if (e.key.control)
 				{
-					if (e.key.code == mi->key && app.pCurrentMode->key != e.key.code)
+					for (auto& mi : app.modes)
 					{
-						mi->onEnter(&app);
-						app.pCurrentMode->onExit(&app);
-						app.pCurrentMode = mi;
-						modeSwitched = true;
-						break;
+						if (e.key.code == mi->key)
+						{
+							mi->onEnter();
+							app.pCurrentMode->onExit();
+							app.pCurrentMode = mi;
+							break;
+						}
 					}
-				}
-				if (modeSwitched)
-				{
 					continue;
 				}
 			}
@@ -191,7 +218,7 @@ int main()
 				}
 			}
 
-			app.pCurrentMode->onEvent(&app, e);
+			app.pCurrentMode->onEvent(e);
 		}
 
 		window.clear(sf::Color::White);
@@ -199,6 +226,9 @@ int main()
 		drawGrid(&app);
 		drawLines(&app);
 		drawCircles(&app);
+		drawText(&app);
+		drawSnappedPoint(&app);
+
 		drawAppMode(&app);
 
 		window.display();

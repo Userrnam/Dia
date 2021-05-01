@@ -10,17 +10,21 @@ struct CreateMode : public Mode
 		Line,
 		NewLine,
 		Circle,
-		NewCircle
+		NewCircle,
+		Text,
+		NewText,
 	};
 
 	State state = Line;
 
-	CreateMode(sf::Keyboard::Key _k) : Mode(_k) {}
+	CreateMode(sf::Keyboard::Key _k, AppInfo *_info) : Mode(_k, _info) {}
 
-	virtual void onEvent(struct AppInfo *info, sf::Event& e) override;
-	virtual void onEnter(struct AppInfo *) override;
-	virtual void onExit(struct AppInfo *) override;
+	virtual void onEvent(sf::Event& e) override;
+	virtual void onEnter() override;
+	virtual void onExit() override;
 	virtual std::string getModeDescription() override;
+
+	void checkText();
 
 };
 

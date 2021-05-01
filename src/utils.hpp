@@ -35,3 +35,6 @@ Circle *getClosestCircle(AppInfo *info, sf::Vector2f pos, float *distance2);
 float d2line(Line& l, sf::Vector2f pos);
 Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2);
 
+char getCharFromKeyEvent(sf::Event::KeyEvent& e);
+bool charPrintable(sf::Event::KeyEvent& e);
+

@@ -6,7 +6,7 @@ float calcRadius(sf::Vector2f center, sf::Vector2f point)
 	return sqrt(d2(center, point));
 }
 
-void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
+void CreateMode::onEvent(sf::Event& e) {
 	switch (e.type)
 	{
 		case sf::Event::MouseMoved:
@@ -25,12 +25,13 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 
 		case sf::Event::MouseButtonPressed:
 		{
+			auto pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 			if (state == Line)
 			{
 				state = NewLine;
 
 				info->lines.push_back({});
-				info->lines.back().p[0] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
+				info->lines.back().p[0] = snap(info, pos);
 				info->lines.back().p[1] = info->lines.back().p[0];
 			}
 			else if (state == Circle)
@@ -38,8 +39,19 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 				state = NewCircle;
 
 				info->circles.push_back({});
-				info->circles.back().center = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
+				info->circles.back().center = snap(info, pos);
 				info->circles.back().radius = 0;
+			}
+			else if (state == Text || state == NewText)
+			{
+				checkText();
+
+				state = NewText;
+				info->texts.push_back({});
+				info->texts.back().text.setFont(info->font);
+				info->texts.back().text.setCharacterSize(35);
+				info->texts.back().text.setFillColor(sf::Color::Black);
+				info->texts.back().text.setPosition(snap(info, pos));
 			}
 
 			break;
@@ -73,13 +85,42 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 
 		case sf::Event::KeyPressed:
 		{
-			if (e.key.code == sf::Keyboard::L)
+			if (state != NewText)
 			{
-				state = Line;
+				if (e.key.code == sf::Keyboard::L)
+				{
+					state = Line;
+				}
+				else if (e.key.code == sf::Keyboard::C)
+				{
+					state = Circle;
+				}
+				else if (e.key.code == sf::Keyboard::T)
+				{
+					state = Text;
+				}
 			}
-			else if (e.key.code == sf::Keyboard::C)
+			else
 			{
-				state = Circle;
+				auto s = info->texts.back().text.getString();
+				if (e.key.code == sf::Keyboard::BackSpace)
+				{
+					if (s.getSize() == 0)
+					{
+						return;
+					}
+
+					s.erase(s.getSize()-1);
+					info->texts.back().text.setString(s);
+				}
+
+				if (charPrintable(e.key))
+				{
+					info->texts.back().text.setString(s + getCharFromKeyEvent(e.key));
+				}
+
+				// update bounding box
+				info->texts.back().bounding = info->texts.back().text.getGlobalBounds();
 			}
 			break;
 		}
@@ -89,14 +130,15 @@ void CreateMode::onEvent(struct AppInfo *info, sf::Event& e) {
 }
 
 
-void CreateMode::onEnter(struct AppInfo *)
+void CreateMode::onEnter()
 {
 	state = Line;
 }
 
-void CreateMode::onExit(struct AppInfo *)
+void CreateMode::onExit()
 {
 	state = Line;
+	checkText();
 }
 
 std::string CreateMode::getModeDescription()
@@ -107,7 +149,25 @@ std::string CreateMode::getModeDescription()
 	if (state == Circle || state == NewCircle)
 		return "Create Circle";
 
+	if (state == Text || state == NewText)
+		return "Create Text";
+
 	return "Error";
+}
+
+void CreateMode::checkText()
+{
+	if (state == Text || state == NewText)
+	{
+		if (info->texts.size() > 0)
+		{
+			if (info->texts.back().text.getString().getSize() == 0)
+			{
+				info->texts.pop_back();
+				return;
+			}
+		}
+	}
 }
 
 

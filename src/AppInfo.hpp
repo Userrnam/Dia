@@ -16,10 +16,9 @@ struct Line
 	}
 };
 
+// may be we can use just sf::CircleShape?
 struct Circle
 {
-	// circle is defined by origin and point on circumference
-	//sf::Vector2f p[2];
 	sf::Vector2f center;
 	float radius;
 	sf::Color outlineColor = sf::Color::Black;
@@ -27,15 +26,22 @@ struct Circle
 	float outlineThickness = 4;
 };
 
+struct Text
+{
+	sf::Text text;
+	sf::FloatRect bounding;
+};
+
 struct Mode
 {
 	sf::Keyboard::Key key;
+	struct AppInfo *info;
 
-	Mode(sf::Keyboard::Key _k) : key(_k) {}
+	Mode(sf::Keyboard::Key _k, struct AppInfo *_info) : key(_k), info(_info) {}
 
-	virtual void onEvent(struct AppInfo *, sf::Event& e) = 0;
-	virtual void onExit(struct AppInfo *)  = 0;
-	virtual void onEnter(struct AppInfo *) = 0;
+	virtual void onEvent(sf::Event& e) = 0;
+	virtual void onExit()  = 0;
+	virtual void onEnter() = 0;
 	virtual std::string getModeDescription() = 0;
 };
 
@@ -58,9 +64,12 @@ struct AppInfo
 
 	bool shiftPressed = false;
 
+	sf::Vector2f snappedPos;
+
 
 	std::vector<Line> lines;
 	std::vector<Circle> circles;
+	std::vector<Text> texts;
 
 	std::vector<Mode *> modes;
 };

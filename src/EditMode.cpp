@@ -4,21 +4,27 @@
 #define MAX_SELECT_DISTANCE 20
 
 
-void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
+void EditMode::onEvent(sf::Event& e)
 {
 	switch (e.type)
 	{
 		case sf::Event::MouseMoved:
 		{
 			sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
+			auto vec = snap(info, mousePos);
+
 			if (state == MovingPoint)
 			{
-				*pVec = snap(info, mousePos);
+				*pVec = vec;
 			}
 			else if (state == ChangingCircleRadius)
 			{
-				auto vec = snap(info, mousePos);
 				pCircle->radius = sqrt(d2(vec, pCircle->center));
+			}
+			else if (state == MovingText)
+			{
+				pText->text.setPosition(vec);
+				pText->bounding = pText->text.getGlobalBounds();
 			}
 
 			break;
@@ -29,6 +35,17 @@ void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
 			sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 			if (state == Point)
 			{
+				// check texts
+				for (auto& t : info->texts)
+				{
+					if (t.bounding.contains(pos))
+					{
+						state = MovingText;
+						pText = &t;
+						return;
+					}
+				}
+				
 				float dist2;
 				sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2);
 				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
@@ -68,6 +85,11 @@ void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
 				state = Point;
 				pCircle = nullptr;
 			}
+			else if (state == MovingText)
+			{
+				state = Point;
+				pText = nullptr;
+			}
 
 			break;
 		}
@@ -76,12 +98,12 @@ void EditMode::onEvent(struct AppInfo * info, sf::Event& e)
 	}
 }
 
-void EditMode::onEnter(struct AppInfo *)
+void EditMode::onEnter()
 {
 	state = Point;
 }
 
-void EditMode::onExit(struct AppInfo *)
+void EditMode::onExit()
 {
 	state = Point;
 }
@@ -94,6 +116,9 @@ std::string EditMode::getModeDescription()
 
 	if (state == ChangingCircleRadius)
 		return "Change Circle Raidus";
+
+	if (state == MovingText)
+		return "MovingText";
 
 	return "Error";
 }

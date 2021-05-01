@@ -5,11 +5,22 @@
 #define MAX_DELETE_DISTANCE 20
 
 
-void DeleteMode::onEvent(struct AppInfo *info, sf::Event& e)
+void DeleteMode::onEvent(sf::Event& e)
 {
 	if (e.type == sf::Event::MouseButtonPressed)
 	{
 		sf::Vector2f mousePos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
+
+		for (int i = 0; i < info->texts.size(); ++i)
+		{
+			auto& t = info->texts[i];
+			if (t.bounding.contains(mousePos))
+			{
+				info->texts.erase(info->texts.begin() + i);
+				return;
+			}
+		}
+
 		float dist2;
 		Line *l = getClosestLine(info, mousePos, &dist2);
 

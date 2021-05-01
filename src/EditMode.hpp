@@ -11,19 +11,20 @@ struct EditMode : public Mode
 	{
 		Point,
 		MovingPoint,
-
-		// this looks ugly
-		ChangingCircleRadius
+		ChangingCircleRadius,
+		MovingText,
+		// TODO add text editing
 	};
 
 	State state = Point;
 	Circle *pCircle = nullptr;
+	Text   *pText   = nullptr;
 
-	EditMode(sf::Keyboard::Key _k) : Mode(_k) {}
+	EditMode(sf::Keyboard::Key _k, AppInfo *_info) : Mode(_k, _info) {}
 
-	virtual void onEvent(struct AppInfo * info, sf::Event& e) override;
-	virtual void onEnter(struct AppInfo *) override;
-	virtual void onExit(struct AppInfo *) override;
+	virtual void onEvent(sf::Event& e) override;
+	virtual void onEnter() override;
+	virtual void onExit() override;
 	virtual std::string getModeDescription() override;
 
 };
