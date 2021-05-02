@@ -47,9 +47,9 @@ struct Mode
 
 /*
  *
-	virtual void onEvent(struct AppInfo *, sf::Event& e) override {}
-	virtual void onExit(struct AppInfo *, sf::Event& e)  override {}
-	virtual void onEnter(struct AppInfo *, sf::Event& e)  override{}
+	virtual void onEvent(sf::Event& e) override {}
+	virtual void onExit()  override {}
+	virtual void onEnter() override {}
  * */
 
 
@@ -65,6 +65,9 @@ struct AppInfo
 	bool shiftPressed = false;
 
 	sf::Vector2f snappedPos;
+	sf::View camera;
+	float cameraZoom = 1.0f;
+	sf::View defaultView;
 
 
 	std::vector<Line> lines;

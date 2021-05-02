@@ -84,40 +84,57 @@ void drawText(AppInfo *info)
 void drawGrid(AppInfo *info)
 {
 	// calculate total number of lines
-	int size = info->gridSize;
+	float size = (float)info->gridSize / info->cameraZoom;
 	int count_x = info->windowSize.x / size;
 	int count_y = info->windowSize.y / size;
 
 	sf::VertexArray va;
-	va.resize(2*(count_x + count_y));
+	va.resize(2*(count_x + count_y + 4));
 	va.setPrimitiveType(sf::PrimitiveType::Lines);
 
 	int k = 0;
 
+	// calculate view displacement
+	sf::Vector2f displacement = info->defaultView.getCenter() - info->camera.getCenter();
+	displacement /= info->cameraZoom;
+
+	displacement.x += (float)info->windowSize.x / 2.0f * (1.0f - 1.0f/info->cameraZoom);
+	displacement.y += (float)info->windowSize.y / 2.0f * (1.0f - 1.0f/info->cameraZoom);
+
+	const float acc = 100;
+	float dx = (((int)(displacement.x * acc)) % ((int)(size * acc))) / acc;
+	float dy = (((int)(displacement.y * acc)) % ((int)(size * acc))) / acc;
+
+	displacement = sf::Vector2f(dx, dy);
+
 	// horizontal lines
-	for (int y = 1; y < count_y+1; ++y)
+	for (int y = 0; y < count_y+2; ++y)
 	{
 		sf::Vertex v;
-		v.position = sf::Vector2f(0, size * y);
+		v.position = sf::Vector2f(-size, size * y);
+		v.position += displacement;
 		v.color    = sf::Color::Black;
 		va[k] = v;
 		k++;
 
-		v.position = sf::Vector2f(info->windowSize.x, size * y);
+		v.position = sf::Vector2f(info->windowSize.x+size, size * y);
+		v.position += displacement;
 		va[k] = v;
 		k++;
 	}
 
 	// vertical lines
-	for (int x = 1; x < count_x+1; ++x)
+	for (int x = 0; x < count_x+2; ++x)
 	{
 		sf::Vertex v;
-		v.position = sf::Vector2f(size * x, 0);
+		v.position = sf::Vector2f(size * x, -size);
+		v.position += displacement;
 		v.color    = sf::Color::Black;
 		va[k]      = v;
 		k++;
 
-		v.position = sf::Vector2f(size * x, info->windowSize.y);
+		v.position = sf::Vector2f(size * x, info->windowSize.y+size);
+		v.position += displacement;
 		va[k] = v;
 		k++;
 	}
@@ -142,8 +159,8 @@ void drawSnappedPoint(AppInfo *info)
 {
 	sf::CircleShape circle;
 	circle.setFillColor(sf::Color::Red);
-	circle.setRadius(5);
-	circle.setOrigin(5, 5);
+	circle.setRadius(5 * info->cameraZoom);
+	circle.setOrigin(5 * info->cameraZoom, 5 * info->cameraZoom);
 	circle.setPosition(info->snappedPos);
 	info->window->draw(circle);
 }
@@ -159,6 +176,14 @@ int main()
 	AppInfo app;
 	app.window = &window;
 	app.windowSize = defaultWindowSize;
+
+	{
+		auto vs = sf::Vector2f(window.getSize());
+		app.camera.setSize(vs);
+		app.camera.setCenter(vs/2.0f);
+	}
+
+	app.defaultView = app.camera;
 
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
 
@@ -179,6 +204,16 @@ int main()
 			{
 				sf::FloatRect visibleArea(0, 0, e.size.width, e.size.height);
 				window.setView(sf::View(visibleArea));
+				
+				auto vs = sf::Vector2f(e.size.width, e.size.height);
+				app.defaultView.setSize(vs);
+				app.defaultView.setCenter(vs/2.0f);
+
+				auto cameraPos = app.camera.getSize()/2.0f - app.camera.getCenter();
+				app.camera.setSize(vs);
+				app.camera.setCenter(vs/2.0f);
+				app.camera.move(cameraPos);
+
 				app.windowSize = sf::Vector2i(e.size.width, e.size.height);
 
 				continue;
@@ -186,7 +221,37 @@ int main()
 
 			if (e.type == sf::Event::MouseMoved)
 			{
-				app.snappedPos = snap(&app, sf::Vector2f(e.mouseMove.x, e.mouseMove.y));
+				auto point = sf::Vector2i(e.mouseMove.x, e.mouseMove.y);
+				auto v = window.mapPixelToCoords(point, app.camera);
+
+				// update mouse pos
+				e.mouseMove.x = v.x;
+				e.mouseMove.y = v.y;
+
+				app.snappedPos = v;
+				app.snappedPos = snap(&app, v);
+			}
+
+			if (e.type == sf::Event::MouseButtonPressed || e.type == sf::Event::MouseButtonReleased)
+			{
+				auto point = sf::Vector2i(e.mouseButton.x, e.mouseButton.y);
+				auto v = window.mapPixelToCoords(point, app.camera);
+
+				// update mouse pos
+				e.mouseButton.x = v.x;
+				e.mouseButton.y = v.y;
+			}
+
+			if (e.type == sf::Event::MouseWheelMoved)
+			{
+				if (e.mouseWheel.delta == 0)
+				{
+					continue;
+				}
+
+				float val = 1.0f + e.mouseWheel.delta * 0.01f;
+				app.cameraZoom *= val;
+				app.camera.zoom(val);
 			}
 
 			if (e.type == sf::Event::KeyPressed)
@@ -209,6 +274,23 @@ int main()
 					}
 					continue;
 				}
+				// TODO change this to something more usable
+				if (e.key.code == sf::Keyboard::Up)
+				{
+					app.camera.move(0, -10);
+				}
+				if (e.key.code == sf::Keyboard::Down)
+				{
+					app.camera.move(0, 10);
+				}
+				if (e.key.code == sf::Keyboard::Left)
+				{
+					app.camera.move(-10, 0);
+				}
+				if (e.key.code == sf::Keyboard::Right)
+				{
+					app.camera.move(10, 0);
+				}
 			}
 			else if (e.type == sf::Event::KeyReleased)
 			{
@@ -221,14 +303,20 @@ int main()
 			app.pCurrentMode->onEvent(e);
 		}
 
+		window.setView(app.defaultView);
+
 		window.clear(sf::Color::White);
 
 		drawGrid(&app);
+
+		window.setView(app.camera);
+
 		drawLines(&app);
 		drawCircles(&app);
 		drawText(&app);
 		drawSnappedPoint(&app);
 
+		window.setView(app.defaultView);
 		drawAppMode(&app);
 
 		window.display();
