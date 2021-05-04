@@ -43,6 +43,9 @@ struct Mode
 	virtual void onExit()  = 0;
 	virtual void onEnter() = 0;
 	virtual std::string getModeDescription() = 0;
+
+	virtual void beforeDraw() {};
+	virtual void afterDraw() {};
 };
 
 /*

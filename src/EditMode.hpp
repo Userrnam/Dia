@@ -3,22 +3,48 @@
 #include "AppInfo.hpp"
 
 
+struct Selection
+{
+	std::vector<Line*> lines;
+	std::vector<Circle*> circles;
+	std::vector<Text*> texts;
+
+	void clear()
+	{
+		lines = {};
+		circles = {};
+		texts = {};
+	}
+
+	void add(Line *line);
+	void add(Circle *circle);
+	void add(Text *text);
+};
+
 struct EditMode : public Mode
 {
 	sf::Vector2f *pVec = 0;
+
+	Selection selection;
 
 	enum State
 	{
 		Point,
 		MovingPoint,
+		MovingLine,
+		SelectElement,
+		SelectEnd,
 		ChangingCircleRadius,
 		MovingText,
 		// TODO add text editing
 	};
 
 	State state = Point;
+	State possibleNextState = Point;
 	Circle *pCircle = nullptr;
 	Text   *pText   = nullptr;
+	Line   *pLine   = nullptr;
+	sf::Vector2f point;
 
 	EditMode(sf::Keyboard::Key _k, AppInfo *_info) : Mode(_k, _info) {}
 
@@ -27,5 +53,6 @@ struct EditMode : public Mode
 	virtual void onExit() override;
 	virtual std::string getModeDescription() override;
 
+	virtual void beforeDraw() override;
 };
 

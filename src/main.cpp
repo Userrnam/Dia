@@ -3,83 +3,12 @@
 
 #include "AppInfo.hpp"
 
-#include "DeleteMode.hpp"
 #include "EditMode.hpp"
 #include "CreateMode.hpp"
 
 #include "utils.hpp"
+#include "Drawer.hpp"
 
-
-void drawCircles(AppInfo *info)
-{
-	sf::CircleShape shape;
-
-	for (auto &circle : info->circles)
-	{
-		shape.setRadius(circle.radius - circle.outlineThickness/2);
-		shape.setOutlineThickness(circle.outlineThickness);
-		shape.setOutlineColor(circle.outlineColor);
-		shape.setFillColor(circle.color);
-
-		shape.setPosition(circle.center);
-		shape.setOrigin(shape.getRadius(), shape.getRadius());
-
-		info->window->draw(shape);
-	}
-}
-
-void drawLines(AppInfo *info)
-{
-	sf::VertexArray va;
-	va.setPrimitiveType(sf::PrimitiveType::Quads);
-	va.resize(info->lines.size() * 4);
-
-	int k = 0;
-	for (auto line : info->lines)
-	{
-		sf::Vector2f normal;
-		normal.x = -(line.p[0] - line.p[1]).y;
-		normal.y = (line.p[0] - line.p[1]).x;
-		normal   = normalize(normal) * line.width/2.0f;
-
-		va[k].color = line.color;
-		va[k].position = line.p[0];
-		va[k].position -= normal;
-		k++;
-
-		va[k].color = line.color;
-		va[k].position = line.p[1];
-		va[k].position -= normal;
-		k++;
-
-		va[k].color = line.color;
-		va[k].position = line.p[1];
-		va[k].position += normal;
-		k++;
-
-		va[k].color = line.color;
-		va[k].position = line.p[0];
-		va[k].position += normal;
-		k++;
-
-	}
-
-	info->window->draw(va);
-}
-
-void drawText(AppInfo *info)
-{
-	sf::RectangleShape rect;
-	rect.setFillColor(sf::Color(170, 170, 0, 50));
-
-	for (auto& t : info->texts)
-	{
-		rect.setPosition(t.bounding.left, t.bounding.top);
-		rect.setSize(sf::Vector2f(t.bounding.width, t.bounding.height));
-		info->window->draw(rect);
-		info->window->draw(t.text);
-	}
-}
 
 void drawGrid(AppInfo *info)
 {
@@ -189,7 +118,6 @@ int main()
 
 	app.modes.push_back(new CreateMode(sf::Keyboard::C, &app));
 	app.modes.push_back(new EditMode(sf::Keyboard::E, &app));
-	app.modes.push_back(new DeleteMode(sf::Keyboard::D, &app));
 
 	app.pCurrentMode = app.modes[0];
 	app.pCurrentMode->onEnter();
@@ -209,14 +137,12 @@ int main()
 				app.defaultView.setSize(vs);
 				app.defaultView.setCenter(vs/2.0f);
 
-				auto cameraPos = app.camera.getSize()/2.0f - app.camera.getCenter();
-				app.camera.setSize(vs);
-				app.camera.setCenter(vs/2.0f);
-				app.camera.move(cameraPos);
+				app.camera.setSize(vs * app.cameraZoom);
+				app.camera.setCenter(vs * app.cameraZoom/2.0f);
 
 				app.windowSize = sf::Vector2i(e.size.width, e.size.height);
 
-				continue;
+				goto EndOfEvent;
 			}
 
 			if (e.type == sf::Event::MouseMoved)
@@ -272,7 +198,7 @@ int main()
 							break;
 						}
 					}
-					continue;
+					goto EndOfEvent;
 				}
 				// TODO change this to something more usable
 				if (e.key.code == sf::Keyboard::Up)
@@ -303,6 +229,8 @@ int main()
 			app.pCurrentMode->onEvent(e);
 		}
 
+EndOfEvent:
+
 		window.setView(app.defaultView);
 
 		window.clear(sf::Color::White);
@@ -311,9 +239,14 @@ int main()
 
 		window.setView(app.camera);
 
-		drawLines(&app);
-		drawCircles(&app);
-		drawText(&app);
+		app.pCurrentMode->beforeDraw();
+
+		drawLines(app.lines, app.window);
+		drawCircles(app.circles, app.window);
+		drawTexts(app.texts, app.window);
+
+		app.pCurrentMode->afterDraw();
+
 		drawSnappedPoint(&app);
 
 		window.setView(app.defaultView);
