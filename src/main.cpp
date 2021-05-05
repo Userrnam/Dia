@@ -139,6 +139,10 @@ int main()
 	bool middleButtonPressed = false;
 	sf::Vector2f posWhenMiddleButtonPressed;
 
+	// 0 - create mode, 1 - edit mode
+	int currentModeIndex = 0;
+	bool modeSwitch = false;
+
 	while (window.isOpen())
 	{
 		sf::Event e;
@@ -168,6 +172,18 @@ int main()
 				{
 					middleButtonPressed = true;
 					posWhenMiddleButtonPressed = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
+				}
+
+				if (e.mouseButton.button == sf::Mouse::Button::Left)
+				{
+					if (currentModeIndex != 0)  modeSwitch = true;
+					currentModeIndex = 0;
+				}
+
+				if (e.mouseButton.button == sf::Mouse::Button::Right)
+				{
+					if (currentModeIndex != 1)  modeSwitch = true;
+					currentModeIndex = 1;
 				}
 			}
 
@@ -224,12 +240,23 @@ int main()
 				app.camera.zoom(val);
 			}
 
+			if (modeSwitch)
+			{
+				modeSwitch = false;
+				Mode *mi = app.modes[currentModeIndex];
+				mi->onEnter();
+				app.pCurrentMode->onExit();
+				app.pCurrentMode = mi;
+			}
+
 			if (e.type == sf::Event::KeyPressed)
 			{
 				if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
 				{
 					app.shiftPressed = true;
 				}
+				/*
+				// mode switch
 				if (e.key.control)
 				{
 					for (auto& mi : app.modes)
@@ -244,6 +271,7 @@ int main()
 					}
 					goto EndOfEvent;
 				}
+				*/
 				if (e.key.code == sf::Keyboard::Hyphen)
 				{
 					if (app.gridSize > 1)
