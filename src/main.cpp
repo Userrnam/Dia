@@ -136,6 +136,9 @@ int main()
 	app.pCurrentMode = app.modes[0];
 	app.pCurrentMode->onEnter();
 
+	bool middleButtonPressed = false;
+	sf::Vector2f posWhenMiddleButtonPressed;
+
 	while (window.isOpen())
 	{
 		sf::Event e;
@@ -159,8 +162,35 @@ int main()
 				goto EndOfEvent;
 			}
 
+			if (e.type == sf::Event::MouseButtonPressed)
+			{
+				if (e.mouseButton.button == sf::Mouse::Button::Middle)
+				{
+					middleButtonPressed = true;
+					posWhenMiddleButtonPressed = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
+				}
+			}
+
+			if (e.type == sf::Event::MouseButtonReleased)
+			{
+				if (e.mouseButton.button == sf::Mouse::Button::Middle)
+				{
+					middleButtonPressed = false;
+					auto current = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
+					app.camera.move(posWhenMiddleButtonPressed-current);
+				}
+			}
+
 			if (e.type == sf::Event::MouseMoved)
 			{
+				if (middleButtonPressed)
+				{
+					auto current = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
+					app.camera.move(posWhenMiddleButtonPressed-current);
+					posWhenMiddleButtonPressed = current;
+				}
+
+				// update mouse pos and snapped point
 				auto point = sf::Vector2i(e.mouseMove.x, e.mouseMove.y);
 				auto v = window.mapPixelToCoords(point, app.camera);
 
