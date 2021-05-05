@@ -25,6 +25,10 @@ void CreateMode::onEvent(sf::Event& e) {
 
 		case sf::Event::MouseButtonPressed:
 		{
+			if (e.mouseButton.button != sf::Mouse::Button::Left)
+			{
+				return;
+			}
 			auto pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 			if (state == Line)
 			{
@@ -59,6 +63,10 @@ void CreateMode::onEvent(sf::Event& e) {
 
 		case sf::Event::MouseButtonReleased:
 		{
+			if (e.mouseButton.button != sf::Mouse::Button::Left)
+			{
+				return;
+			}
 			if (state == NewLine)
 			{
 				info->lines.back().p[1] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));

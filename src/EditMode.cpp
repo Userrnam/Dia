@@ -105,6 +105,10 @@ void EditMode::onEvent(sf::Event& e)
 
 		case sf::Event::MouseButtonPressed:
 		{
+			if (e.mouseButton.button != sf::Mouse::Button::Left)
+			{
+				return;
+			}
 			if (!info->shiftPressed)
 			{
 				selection.clear();
@@ -191,6 +195,10 @@ void EditMode::onEvent(sf::Event& e)
 
 		case sf::Event::MouseButtonReleased:
 		{
+			if (e.mouseButton.button != sf::Mouse::Button::Left)
+			{
+				return;
+			}
 			if (state == MovingPoint)
 			{
 				state = Point;

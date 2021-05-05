@@ -94,6 +94,20 @@ void drawSnappedPoint(AppInfo *info)
 	info->window->draw(circle);
 }
 
+void drawGridSize(AppInfo *info)
+{
+	sf::Text text;
+	text.setFont(info->font);
+	text.setCharacterSize(info->characterSize);
+	text.setFillColor(sf::Color::Black);
+
+	text.setString("Grid Size: " + std::to_string(info->gridSize));
+
+	text.setPosition(10, info->windowSize.y - 20 - text.getGlobalBounds().height);
+
+	info->window->draw(text);
+}
+
 const auto defaultWindowSize = sf::Vector2i(800, 600);
 
 int main()
@@ -200,6 +214,22 @@ int main()
 					}
 					goto EndOfEvent;
 				}
+				if (e.key.code == sf::Keyboard::Hyphen)
+				{
+					if (app.gridSize > 1)
+					{
+						app.gridSize /= 2;
+					}
+					goto EndOfEvent;
+				}
+				if (e.key.code == sf::Keyboard::Equal)
+				{
+					if (app.gridSize < INT_MAX/2)
+					{
+						app.gridSize *= 2;
+					}
+					goto EndOfEvent;
+				}
 				// TODO change this to something more usable
 				if (e.key.code == sf::Keyboard::Up)
 				{
@@ -251,6 +281,7 @@ EndOfEvent:
 
 		window.setView(app.defaultView);
 		drawAppMode(&app);
+		drawGridSize(&app);
 
 		window.display();
 	}

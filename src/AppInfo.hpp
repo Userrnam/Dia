@@ -62,7 +62,7 @@ struct AppInfo
 	sf::Font font;
 	sf::RenderWindow *window;
 	sf::Vector2i windowSize;
-	int gridSize = 50;
+	int gridSize = 64;
 	Mode *pCurrentMode;
 
 	bool shiftPressed = false;
