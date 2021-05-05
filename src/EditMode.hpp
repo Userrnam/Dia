@@ -26,6 +26,7 @@ struct EditMode : public Mode
 	sf::Vector2f *pVec = 0;
 
 	Selection selection;
+	sf::FloatRect selectionRectangle;
 
 	enum State
 	{
@@ -34,6 +35,7 @@ struct EditMode : public Mode
 		MovingLine,
 		SelectElement,
 		SelectEnd,
+		SelectionRectangle,
 		ChangingCircleRadius,
 		MovingText,
 		// TODO add text editing

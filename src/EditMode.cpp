@@ -5,6 +5,42 @@
 
 const sf::Color selectionColor = sf::Color(70,70,180,90);
 
+Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *info)
+{
+	Selection result;
+
+	for (auto& line : info->lines)
+	{
+		if (selectionRectangle.contains(line.p[0]) && selectionRectangle.contains(line.p[1]))
+		{
+			result.lines.push_back(&line);
+		}
+	}
+
+	for (auto& circle : info->circles)
+	{
+		if (selectionRectangle.contains(sf::Vector2f(circle.center.x+circle.radius, circle.center.y+circle.radius)) &&
+			selectionRectangle.contains(sf::Vector2f(circle.center.x-circle.radius, circle.center.y-circle.radius)) 
+			)
+		{
+			result.circles.push_back(&circle);
+		}
+	}
+
+	for (auto& text : info->texts)
+	{
+		auto bounds = text.bounding;
+		if (selectionRectangle.contains(sf::Vector2f(bounds.left, bounds.top)) &&
+			selectionRectangle.contains(sf::Vector2f(bounds.left+bounds.width, bounds.top+bounds.height))
+			)
+		{
+			result.texts.push_back(&text);
+		}
+	}
+
+	return result;
+}
+
 void Selection::add(Line *line)
 {
 	for (auto l : lines)
@@ -99,6 +135,11 @@ void EditMode::onEvent(sf::Event& e)
 			{
 				state = possibleNextState;
 			}
+			else if (state == SelectionRectangle)
+			{
+				selectionRectangle.width  = mousePos.x - selectionRectangle.left;
+				selectionRectangle.height = mousePos.y - selectionRectangle.top;
+			}
 
 			break;
 		}
@@ -187,7 +228,11 @@ void EditMode::onEvent(sf::Event& e)
 				}
 
 				selection.clear();
-				state = Point;
+
+//				state = Point;
+				state = SelectionRectangle;
+				selectionRectangle.left = pos.x;
+				selectionRectangle.top = pos.y;
 			}
 
 			break;
@@ -224,6 +269,12 @@ void EditMode::onEvent(sf::Event& e)
 			else if (state == SelectElement)
 			{
 				state = SelectEnd;
+			}
+			else if (state == SelectionRectangle)
+			{
+				selection = getSelectionFromRectangle(selectionRectangle, info);
+				state = Point;
+				selectionRectangle = {};
 			}
 
 			break;
@@ -272,6 +323,9 @@ std::string EditMode::getModeDescription()
 	if (state == SelectEnd)
 		return "Select End";
 
+	if (state == SelectionRectangle)
+		return "Selection Rectangle";
+
 	return "Error";
 }
 
@@ -282,10 +336,22 @@ void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow *windo
 
 void EditMode::beforeDraw()
 {
-	// draw selection
-	drawLinesSelection(selection.lines, info->window);
-	drawCirclesSelection(selection.circles, info->window);
-	drawTextsSelection(selection.texts, info->window);
+	if (state == SelectionRectangle)
+	{
+		sf::RectangleShape shape;
+		shape.setPosition(selectionRectangle.left, selectionRectangle.top);
+		shape.setSize(sf::Vector2f(selectionRectangle.width, selectionRectangle.height));
+		shape.setFillColor(selectionColor);
+
+		info->window->draw(shape);
+	}
+	else
+	{
+		// draw selection
+		drawLinesSelection(selection.lines, info->window);
+		drawCirclesSelection(selection.circles, info->window);
+		drawTextsSelection(selection.texts, info->window);
+	}
 }
 
 void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow *window)
