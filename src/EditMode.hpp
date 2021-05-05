@@ -19,6 +19,17 @@ struct Selection
 	void add(Line *line);
 	void add(Circle *circle);
 	void add(Text *text);
+	
+	bool contains(Line *line);
+	bool contains(Circle *circle);
+	bool contains(Text *text);
+
+	void move(sf::Vector2f vec);
+
+	int size()
+	{
+		return lines.size() + circles.size() + texts.size();
+	}
 };
 
 struct EditMode : public Mode
@@ -33,6 +44,7 @@ struct EditMode : public Mode
 		Point,
 		MovingPoint,
 		MovingLine,
+		MovingSelection,
 		SelectElement,
 		SelectEnd,
 		SelectionRectangle,
@@ -40,6 +52,8 @@ struct EditMode : public Mode
 		MovingText,
 		// TODO add text editing
 	};
+
+	sf::Vector2f movingSelectionReferencePoint;
 
 	State state = Point;
 	State possibleNextState = Point;

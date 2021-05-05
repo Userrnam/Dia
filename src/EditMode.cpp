@@ -41,6 +41,28 @@ Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *i
 	return result;
 }
 
+void Selection::move(sf::Vector2f v)
+{
+	for (auto& line : lines)
+	{
+		line->p[0] += v;
+		line->p[1] += v;
+	}
+
+	for (auto& circle : circles)
+	{
+		circle->center += v;
+	}
+
+	for (auto& text : texts)
+	{
+		text->bounding.left += v.x;
+		text->bounding.top += v.y;
+
+		text->text.move(v);
+	}
+}
+
 void Selection::add(Line *line)
 {
 	for (auto l : lines)
@@ -69,6 +91,34 @@ void Selection::add(Text *text)
 	}
 
 	texts.push_back(text);
+}
+
+bool Selection::contains(Line *line)
+{
+	for (auto l : lines)
+	{
+		if (l == line)  return true;;
+	}
+	return false;
+}
+
+bool Selection::contains(Circle *circle)
+{
+	for (auto c : circles)
+	{
+		if (c == circle)  return true;
+	}
+	return false;
+}
+
+bool Selection::contains(Text *text)
+{
+	for (auto t : texts)
+	{
+		if (t == text)  return true;;
+	}
+
+	return false;
 }
 
 void removeSelection(Selection *pSelection, AppInfo *info)
@@ -140,40 +190,44 @@ void EditMode::onEvent(sf::Event& e)
 				selectionRectangle.width  = mousePos.x - selectionRectangle.left;
 				selectionRectangle.height = mousePos.y - selectionRectangle.top;
 			}
+			else if (state == MovingSelection)
+			{
+				auto mov = vec - movingSelectionReferencePoint;
+				movingSelectionReferencePoint = vec;
+				selection.move(mov);
+			}
 
 			break;
 		}
 
 		case sf::Event::MouseButtonPressed:
 		{
-			/*
-			if (e.mouseButton.button != sf::Mouse::Button::Left)
-			{
-				return;
-			}
-			*/
-			if (!info->shiftPressed)
-			{
-				selection.clear();
-			}
-
 			if (state == SelectEnd)
 			{
 				state = Point;
 			}
 
 			sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
-			if (state == Point)
+			if (state == Point || info->shiftPressed && state == MovingSelection)
 			{
 				// check texts
 				for (auto& t : info->texts)
 				{
 					if (t.bounding.contains(pos))
 					{
-						selection.add(&t);
-						state = SelectElement;
-						possibleNextState = MovingText;
-						pText = &t;
+						if (selection.contains(&t))
+						{
+							state = MovingSelection;
+							movingSelectionReferencePoint = sf::Vector2f(t.bounding.left, t.bounding.top);
+						}
+						else
+						{
+							if (!info->shiftPressed)  selection.clear();
+							selection.add(&t);
+							state = SelectElement;
+							possibleNextState = MovingText;
+							pText = &t;
+						}
 						return;
 					}
 				}
@@ -183,6 +237,13 @@ void EditMode::onEvent(sf::Event& e)
 				sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2, &ll);
 				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
 				{
+					if (selection.contains(ll) && selection.size() > 1)
+					{
+						state = MovingSelection;
+						movingSelectionReferencePoint = *p;
+						return;
+					}
+
 					// if user clicks on point, it cannot be a selection
 					state = MovingPoint;
 					pVec = p;
@@ -193,6 +254,14 @@ void EditMode::onEvent(sf::Event& e)
 				Circle *p2 = getClosestCircle(info, pos, &dist3);
 				if (dist3 < dist2 && dist3 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
 				{
+					if (selection.contains(p2) && selection.size() > 1)
+					{
+						state = MovingSelection;
+						movingSelectionReferencePoint = p2->center;
+						return;
+					}
+
+					if (!info->shiftPressed)  selection.clear();
 					selection.add(p2);
 					state = SelectElement;
 					possibleNextState = MovingPoint;
@@ -210,28 +279,36 @@ void EditMode::onEvent(sf::Event& e)
 				Line *pL = getClosestLine(info, pos, &dist2);
 				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
 				{
+					float dl1 = d2(pos, pL->p[0]);
+					float dl2 = d2(pos, pL->p[1]);
+
+					if (dl1 < dl2)
+					{
+						pVec = &pL->p[0];
+					}
+					else
+					{
+						pVec = &pL->p[1];
+					}
+
+					if (selection.contains(pL))
+					{
+						state = MovingSelection;
+						movingSelectionReferencePoint = *pVec;
+						return;
+					}
+
+					if (!info->shiftPressed)  selection.clear();
 					selection.add(pL);
 					state = SelectElement;
 					possibleNextState = MovingLine;
 					pLine = pL;
 
-					float dl1 = d2(pos, pLine->p[0]);
-					float dl2 = d2(pos, pLine->p[1]);
-
-					if (dl1 < dl2)
-					{
-						pVec = &pLine->p[0];
-					}
-					else
-					{
-						pVec = &pLine->p[1];
-					}
 					return;
 				}
 
 				selection.clear();
 
-//				state = Point;
 				state = SelectionRectangle;
 				selectionRectangle.left = pos.x;
 				selectionRectangle.top = pos.y;
@@ -242,12 +319,6 @@ void EditMode::onEvent(sf::Event& e)
 
 		case sf::Event::MouseButtonReleased:
 		{
-			/*
-			if (e.mouseButton.button != sf::Mouse::Button::Left)
-			{
-				return;
-			}
-			*/
 			if (state == MovingPoint)
 			{
 				state = Point;
@@ -280,6 +351,10 @@ void EditMode::onEvent(sf::Event& e)
 				state = Point;
 				selectionRectangle = {};
 			}
+			else if (state == MovingSelection)
+			{
+				state = Point;
+			}
 
 			break;
 		}
@@ -300,11 +375,13 @@ void EditMode::onEvent(sf::Event& e)
 void EditMode::onEnter()
 {
 	state = Point;
+	selection.clear();
 }
 
 void EditMode::onExit()
 {
 	state = Point;
+	selection.clear();
 }
 
 std::string EditMode::getModeDescription()
@@ -329,6 +406,9 @@ std::string EditMode::getModeDescription()
 
 	if (state == SelectionRectangle)
 		return "Selection Rectangle";
+
+	if (state == MovingSelection)
+		return "Moving Selection";
 
 	return "Error";
 }
