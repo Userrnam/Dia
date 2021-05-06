@@ -72,6 +72,7 @@ struct AppInfo
 	float cameraZoom = 1.0f;
 	sf::View defaultView;
 
+	bool snapping = true;
 
 	std::vector<Line> lines;
 	std::vector<Circle> circles;

@@ -8,7 +8,10 @@
 
 #include "utils.hpp"
 #include "Drawer.hpp"
+#include "CommandLine.hpp"
 
+
+const sf::Color gridColor = sf::Color(200, 200, 200, 255);
 
 void drawGrid(AppInfo *info)
 {
@@ -42,7 +45,7 @@ void drawGrid(AppInfo *info)
 		sf::Vertex v;
 		v.position = sf::Vector2f(-size, size * y);
 		v.position += displacement;
-		v.color    = sf::Color::Black;
+		v.color    = gridColor;
 		va[k] = v;
 		k++;
 
@@ -58,7 +61,7 @@ void drawGrid(AppInfo *info)
 		sf::Vertex v;
 		v.position = sf::Vector2f(size * x, -size);
 		v.position += displacement;
-		v.color    = sf::Color::Black;
+		v.color    = gridColor;
 		va[k]      = v;
 		k++;
 
@@ -96,6 +99,7 @@ void drawSnappedPoint(AppInfo *info)
 
 void drawGridSize(AppInfo *info)
 {
+	// draw it in top right corner
 	sf::Text text;
 	text.setFont(info->font);
 	text.setCharacterSize(info->characterSize);
@@ -103,12 +107,206 @@ void drawGridSize(AppInfo *info)
 
 	text.setString("Grid Size: " + std::to_string(info->gridSize));
 
-	text.setPosition(10, info->windowSize.y - 20 - text.getGlobalBounds().height);
+	text.setPosition(info->windowSize.x - text.getGlobalBounds().width-20, 10);
+
+	info->window->draw(text);
+}
+
+void drawCommandLine(AppInfo *info, const std::string& commandLine)
+{
+	sf::Text text;
+	text.setFont(info->font);
+	text.setCharacterSize(info->characterSize);
+	text.setFillColor(sf::Color::Black);
+
+	text.setString(commandLine);
+
+	text.setPosition(10, info->windowSize.y - text.getGlobalBounds().top - 50);
 
 	info->window->draw(text);
 }
 
 const auto defaultWindowSize = sf::Vector2i(800, 600);
+
+enum class State
+{
+	None,
+	CommandLine
+};
+
+void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, State& state)
+{
+	if (e.type == sf::Event::KeyPressed)
+	{
+		if (e.key.code == sf::Keyboard::Enter)
+		{
+			state = State::None;
+
+			bool success;
+			Command command = parseCommand(commandLine, &success);
+			if (!success)
+			{
+				state = State::None;
+				commandLine = "";
+				std::cout << "failed to parse command\n";
+				return;
+			}
+			if (command.target == Command::Line)
+			{
+				if (command.global)
+				{
+					if (command.paramType == Command::LineWidth)
+					{
+						for (auto& line : app.lines)
+						{
+							line.width = command.param[0];
+						}
+					}
+					else if (command.paramType == Command::LineColor)
+					{
+						for (auto& line : app.lines)
+						{
+							line.color.r = command.param[0];
+							line.color.g = command.param[1];
+							line.color.b = command.param[2];
+							line.color.a = command.param[3];
+						}
+					}
+				}
+				else
+				{
+					if (command.paramType == Command::LineWidth)
+					{
+						// FIXME
+						for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
+						{
+							line->width = command.param[0];
+						}
+					}
+					else if (command.paramType == Command::LineColor)
+					{
+						// FIXME
+						for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
+						{
+							line->color.r = command.param[0];
+							line->color.g = command.param[1];
+							line->color.b = command.param[2];
+							line->color.a = command.param[3];
+						}
+					}
+				}
+			}
+			else if (command.target == Command::Circle)
+			{
+				if (command.global)
+				{
+					if (command.paramType == Command::CircleBorderWidth)
+					{
+						for (auto& circle : app.circles)
+						{
+							circle.outlineThickness = command.param[0];
+						}
+					}
+					else if (command.paramType == Command::CircleBorderColor)
+					{
+						for (auto& circle : app.circles)
+						{
+							circle.outlineColor.r = command.param[0];
+							circle.outlineColor.g = command.param[1];
+							circle.outlineColor.b = command.param[2];
+							circle.outlineColor.a = command.param[3];
+						}
+					}
+					else if (command.paramType == Command::CircleFillColor)
+					{
+						for (auto& circle : app.circles)
+						{
+							circle.color.r = command.param[0];
+							circle.color.g = command.param[1];
+							circle.color.b = command.param[2];
+							circle.color.a = command.param[3];
+						}
+					}
+				}
+				else
+				{
+					if (command.paramType == Command::CircleBorderWidth)
+					{
+						// FIXME
+						for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+						{
+							circle->outlineThickness = command.param[0];
+						}
+					}
+					else if (command.paramType == Command::CircleBorderColor)
+					{
+						// FIXME
+						for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+						{
+							circle->outlineColor.r = command.param[0];
+							circle->outlineColor.g = command.param[1];
+							circle->outlineColor.b = command.param[2];
+							circle->outlineColor.a = command.param[3];
+						}
+					}
+					else if (command.paramType == Command::CircleFillColor)
+					{
+						// FIXME
+						for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+						{
+							circle->color.r = command.param[0];
+							circle->color.g = command.param[1];
+							circle->color.b = command.param[2];
+							circle->color.a = command.param[3];
+						}
+					}
+				}
+			}
+			else if (command.target == Command::Text)
+			{
+				if (command.global)
+				{
+					if (command.paramType == Command::TextSize)
+					{
+						for (auto& text : app.texts)
+						{
+							text.text.setCharacterSize(command.param[0]);
+							text.bounding = text.text.getGlobalBounds();
+						}
+					}
+				}
+				else
+				{
+					if (command.paramType == Command::TextSize)
+					{
+						// FIXME
+						for (auto text : reinterpret_cast<EditMode*>(app.modes[1])->selection.texts)
+						{
+							text->text.setCharacterSize(command.param[0]);
+							text->bounding = text->text.getGlobalBounds();
+						}
+					}
+				}
+			}
+			else
+			{
+				std::cout << "Error\n";
+			}
+			commandLine = "";
+		}
+		else if (e.key.code == sf::Keyboard::Backspace)
+		{
+			if (commandLine.size())
+			{
+				commandLine.pop_back();
+			}
+		}
+		else if (charPrintable(e.key))
+		{
+			commandLine += getCharFromKeyEvent(e.key);
+		}
+	}
+}
 
 int main()
 {
@@ -138,10 +336,13 @@ int main()
 
 	bool middleButtonPressed = false;
 	sf::Vector2f posWhenMiddleButtonPressed;
+	State state = State::None;
 
 	// 0 - create mode, 1 - edit mode
 	int currentModeIndex = 0;
 	bool modeSwitch = false;
+
+	std::string commandLine;
 
 	while (window.isOpen())
 	{
@@ -168,6 +369,9 @@ int main()
 
 			if (e.type == sf::Event::MouseButtonPressed)
 			{
+				state = State::None;
+				commandLine = "";
+
 				if (e.mouseButton.button == sf::Mouse::Button::Middle)
 				{
 					middleButtonPressed = true;
@@ -239,71 +443,20 @@ int main()
 				app.cameraZoom *= val;
 				app.camera.zoom(val);
 			}
-
-			if (modeSwitch)
+			else if (e.type == sf::Event::KeyPressed)
 			{
-				modeSwitch = false;
-				Mode *mi = app.modes[currentModeIndex];
-				mi->onEnter();
-				app.pCurrentMode->onExit();
-				app.pCurrentMode = mi;
-			}
-
-			if (e.type == sf::Event::KeyPressed)
-			{
-				if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
+				if (e.key.code == sf::Keyboard::SemiColon)
+				{
+					state = State::CommandLine;
+					commandLine = "";
+				}
+				else if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
 				{
 					app.shiftPressed = true;
 				}
-				/*
-				// mode switch
-				if (e.key.control)
+				else if (e.key.code == sf::Keyboard::RAlt || e.key.code == sf::Keyboard::LAlt)
 				{
-					for (auto& mi : app.modes)
-					{
-						if (e.key.code == mi->key)
-						{
-							mi->onEnter();
-							app.pCurrentMode->onExit();
-							app.pCurrentMode = mi;
-							break;
-						}
-					}
-					goto EndOfEvent;
-				}
-				*/
-				if (e.key.code == sf::Keyboard::Hyphen)
-				{
-					if (app.gridSize > 1)
-					{
-						app.gridSize /= 2;
-					}
-					goto EndOfEvent;
-				}
-				if (e.key.code == sf::Keyboard::Equal)
-				{
-					if (app.gridSize < INT_MAX/2)
-					{
-						app.gridSize *= 2;
-					}
-					goto EndOfEvent;
-				}
-				// TODO change this to something more usable
-				if (e.key.code == sf::Keyboard::Up)
-				{
-					app.camera.move(0, -10);
-				}
-				if (e.key.code == sf::Keyboard::Down)
-				{
-					app.camera.move(0, 10);
-				}
-				if (e.key.code == sf::Keyboard::Left)
-				{
-					app.camera.move(-10, 0);
-				}
-				if (e.key.code == sf::Keyboard::Right)
-				{
-					app.camera.move(10, 0);
+					app.snapping = false;
 				}
 			}
 			else if (e.type == sf::Event::KeyReleased)
@@ -312,9 +465,83 @@ int main()
 				{
 					app.shiftPressed = false;
 				}
+				else if (e.key.code == sf::Keyboard::RAlt || e.key.code == sf::Keyboard::LAlt)
+				{
+					app.snapping = true;
+				}
 			}
 
-			app.pCurrentMode->onEvent(e);
+			if (state == State::None)
+			{
+				if (e.type == sf::Event::KeyPressed)
+				{
+					if (e.key.code == sf::Keyboard::C && e.key.control)
+					{
+						if (currentModeIndex != 0)
+						{
+							modeSwitch = true;
+							currentModeIndex = 0;
+						}
+						else
+						{
+							app.modes[0]->onExit();
+							app.modes[0]->onEnter();
+						}
+						e.key.code = sf::Keyboard::L;
+					}
+				}
+
+				if (modeSwitch)
+				{
+					modeSwitch = false;
+					Mode *mi = app.modes[currentModeIndex];
+					mi->onEnter();
+					app.pCurrentMode->onExit();
+					app.pCurrentMode = mi;
+				}
+
+				if (e.type == sf::Event::KeyPressed)
+				{
+					if (e.key.code == sf::Keyboard::Hyphen)
+					{
+						if (app.gridSize > 1)
+						{
+							app.gridSize /= 2;
+						}
+						goto EndOfEvent;
+					}
+					if (e.key.code == sf::Keyboard::Equal)
+					{
+						if (app.gridSize < INT_MAX/2)
+						{
+							app.gridSize *= 2;
+						}
+						goto EndOfEvent;
+					}
+					// TODO change this to something more usable
+					if (e.key.code == sf::Keyboard::Up)
+					{
+						app.camera.move(0, -10);
+					}
+					if (e.key.code == sf::Keyboard::Down)
+					{
+						app.camera.move(0, 10);
+					}
+					if (e.key.code == sf::Keyboard::Left)
+					{
+						app.camera.move(-10, 0);
+					}
+					if (e.key.code == sf::Keyboard::Right)
+					{
+						app.camera.move(10, 0);
+					}
+				}
+				app.pCurrentMode->onEvent(e);
+			}
+			else if (state == State::CommandLine)
+			{
+				handleCommandLine(e, app, commandLine, state);
+			}
 		}
 
 EndOfEvent:
@@ -340,6 +567,7 @@ EndOfEvent:
 		window.setView(app.defaultView);
 		drawAppMode(&app);
 		drawGridSize(&app);
+		drawCommandLine(&app, commandLine);
 
 		window.display();
 	}

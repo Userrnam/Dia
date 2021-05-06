@@ -319,6 +319,11 @@ void EditMode::onEvent(sf::Event& e)
 
 		case sf::Event::MouseButtonPressed:
 		{
+			if (e.mouseButton.button != sf::Mouse::Button::Right)
+			{
+				return;
+			}
+		
 			if (state == SelectEnd)
 			{
 				state = Point;
@@ -443,6 +448,11 @@ void EditMode::onEvent(sf::Event& e)
 
 		case sf::Event::MouseButtonReleased:
 		{
+			if (e.mouseButton.button != sf::Mouse::Button::Right)
+			{
+				return;
+			}
+
 			if (state == MovingPoint)
 			{
 				state = Point;
@@ -596,7 +606,7 @@ void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow 
 		auto& circle = *c;
 
 		shape.setRadius(circle.radius - circle.outlineThickness/2 - 5);
-		shape.setOutlineThickness(circle.outlineThickness + 5);
+		shape.setOutlineThickness(circle.outlineThickness + 10);
 
 		shape.setPosition(circle.center);
 		shape.setOrigin(shape.getRadius(), shape.getRadius());

@@ -28,6 +28,8 @@ inline sf::Vector2f normalize(sf::Vector2f v)
 
 inline sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
 {
+	if (!info->snapping)   return pos;
+
 	sf::Vector2f p;
 	pos /= info->cameraZoom;
 
