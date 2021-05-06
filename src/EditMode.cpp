@@ -1,9 +1,75 @@
 #include "EditMode.hpp"
 #include "utils.hpp"
+#include "Drawer.hpp"
 
 #define MAX_SELECT_DISTANCE 20
 
 const sf::Color selectionColor = sf::Color(70,70,180,90);
+
+void CopyInfo::move(sf::Vector2f v)
+{
+	for (auto& line : lines)
+	{
+		line.p[0] += v;
+		line.p[1] += v;
+	}
+
+	for (auto& circle : circles)
+	{
+		circle.center += v;
+	}
+
+	for (auto& text : texts)
+	{
+		text.bounding.left += v.x;
+		text.bounding.top += v.y;
+
+		text.text.move(v);
+	}
+}
+
+void copyCopyInfoToSelectionAndAppInfo(Selection *selection, AppInfo *info, CopyInfo *copyInfo)
+{
+	// insure that pointers in selection will be correct
+	info->lines.reserve(info->lines.size()+copyInfo->lines.size()+10);
+	for (auto line : copyInfo->lines)
+	{
+		info->lines.push_back(line);
+		selection->lines.push_back(&info->lines.back());
+	}
+
+	info->circles.reserve(info->circles.size()+copyInfo->circles.size()+10);
+	for (auto circles : copyInfo->circles)
+	{
+		info->circles.push_back(circles);
+		selection->circles.push_back(&info->circles.back());
+	}
+
+	info->texts.reserve(info->texts.size()+copyInfo->texts.size()+10);
+	for (auto text : copyInfo->texts)
+	{
+		info->texts.push_back(text);
+		selection->texts.push_back(&info->texts.back());
+	}
+}
+
+void copySelectionToCopyInfo(CopyInfo *copyInfo, Selection *selection)
+{
+	for (auto line : selection->lines)
+	{
+		copyInfo->lines.push_back(*line);
+	}
+
+	for (auto circles : selection->circles)
+	{
+		copyInfo->circles.push_back(*circles);
+	}
+
+	for (auto text : selection->texts)
+	{
+		copyInfo->texts.push_back(*text);
+	}
+}
 
 Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *info)
 {
@@ -61,6 +127,51 @@ void Selection::move(sf::Vector2f v)
 
 		text->text.move(v);
 	}
+}
+
+sf::Vector2f Selection::closestPoint(sf::Vector2f v)
+{
+	sf::Vector2f res = sf::Vector2f(0, 0);
+	float dMin = 1e7;
+
+	for (auto line : lines)
+	{
+		float dist = d2(v, line->p[0]);
+		if (dist < dMin)
+		{
+			dMin = dist;
+			res = line->p[0];
+		}
+		dist = d2(v, line->p[1]);
+		if (dist < dMin)
+		{
+			dMin = dist;
+			res = line->p[1];
+		}
+	}
+
+	for (auto circle : circles)
+	{
+		float dist = d2(v, circle->center);
+		if (dist < dMin)
+		{
+			dMin = dist;
+			res = circle->center;
+		}
+	}
+
+	for (auto text : texts)
+	{
+		auto point = sf::Vector2f(text->bounding.left, text->bounding.top);
+		float dist = d2(v, point);
+		if (dist < dMin)
+		{
+			dMin = dist;
+			res = point;
+		}
+	}
+
+	return res;
 }
 
 void Selection::add(Line *line)
@@ -196,6 +307,12 @@ void EditMode::onEvent(sf::Event& e)
 				movingSelectionReferencePoint = vec;
 				selection.move(mov);
 			}
+			else if (state == MovingCopy)
+			{
+				auto mov = vec - referencePoint;			
+				referencePoint = vec;
+				copyInfo.move(mov);
+			}
 
 			break;
 		}
@@ -313,6 +430,13 @@ void EditMode::onEvent(sf::Event& e)
 				selectionRectangle.left = pos.x;
 				selectionRectangle.top = pos.y;
 			}
+			else if (state == MovingCopy)
+			{
+				selection.clear();
+				copyCopyInfoToSelectionAndAppInfo(&selection, info, &copyInfo);
+				copyInfo.clear();
+				state = Point;
+			}
 
 			break;
 		}
@@ -364,6 +488,13 @@ void EditMode::onEvent(sf::Event& e)
 			{
 				removeSelection(&selection, info);
 			}
+			else if (e.key.code == sf::Keyboard::Y)
+			{
+				referencePoint = selection.closestPoint(info->snappedPos);
+				copyInfo.clear();
+				copySelectionToCopyInfo(&copyInfo, &selection);
+				state = MovingCopy;
+			}
 
 			break;
 		}
@@ -380,6 +511,13 @@ void EditMode::onEnter()
 
 void EditMode::onExit()
 {
+	if (copyInfo.size())
+	{
+		selection.clear();
+		copyCopyInfoToSelectionAndAppInfo(&selection, info, &copyInfo);
+		copyInfo.clear();
+	}
+
 	state = Point;
 	selection.clear();
 }
@@ -410,6 +548,9 @@ std::string EditMode::getModeDescription()
 	if (state == MovingSelection)
 		return "Moving Selection";
 
+	if (state == MovingCopy)
+		return "Moving Copy";
+
 	return "Error";
 }
 
@@ -436,6 +577,11 @@ void EditMode::beforeDraw()
 		drawCirclesSelection(selection.circles, info->window);
 		drawTextsSelection(selection.texts, info->window);
 	}
+
+	// draw copyInfo
+	drawLines(copyInfo.lines, info->window);
+	drawCircles(copyInfo.circles, info->window);
+	drawTexts(copyInfo.texts, info->window);
 }
 
 void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow *window)

@@ -26,10 +26,33 @@ struct Selection
 
 	void move(sf::Vector2f vec);
 
+	sf::Vector2f closestPoint(sf::Vector2f v);
+
 	int size()
 	{
 		return lines.size() + circles.size() + texts.size();
 	}
+};
+
+struct CopyInfo
+{
+	std::vector<Line> lines;
+	std::vector<Circle> circles;
+	std::vector<Text> texts;
+
+	void clear()
+	{
+		lines.clear();
+		circles.clear();
+		texts.clear();
+	}
+
+	int size()
+	{
+		return lines.size() + circles.size() + texts.size();
+	}
+
+	void move(sf::Vector2f mov);
 };
 
 struct EditMode : public Mode
@@ -38,6 +61,8 @@ struct EditMode : public Mode
 
 	Selection selection;
 	sf::FloatRect selectionRectangle;
+
+	CopyInfo copyInfo;
 
 	enum State
 	{
@@ -50,6 +75,7 @@ struct EditMode : public Mode
 		SelectionRectangle,
 		ChangingCircleRadius,
 		MovingText,
+		MovingCopy,
 		// TODO add text editing
 	};
 
@@ -61,6 +87,7 @@ struct EditMode : public Mode
 	Text   *pText   = nullptr;
 	Line   *pLine   = nullptr;
 	sf::Vector2f point;
+	sf::Vector2f referencePoint;
 
 	EditMode(sf::Keyboard::Key _k, AppInfo *_info) : Mode(_k, _info) {}
 

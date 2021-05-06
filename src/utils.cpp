@@ -50,22 +50,36 @@ Circle *getClosestCircle(AppInfo *info, sf::Vector2f pos, float *distance2)
 
 float d2line(Line& l, sf::Vector2f pos)
 {
-	float a2 = d2(l.p[0], pos);
-	float b2 = d2(l.p[1], pos);
-	float c2 = d2(l.p[0], l.p[1]);
+	float lineLength = sqrt(d2(l.p[0], l.p[1]));
+	auto lineNormal = (l.p[1]-l.p[0])/lineLength;
 
-	float c = sqrt(c2);
+	auto d = dot(lineNormal, pos-l.p[0]);
+	if (0 < d && d < lineLength)
+	{
+		float a2 = d2(l.p[0], pos);
+		float b2 = d2(l.p[1], pos);
+		float c2 = d2(l.p[0], l.p[1]);
 
-	float t = (a2 - b2 - c2)/(2*c);
+		float c = sqrt(c2);
 
-	return b2 - t*t;
+		float t = (a2 - b2 - c2)/(2*c);
+
+		return b2 - t*t;
+	}
+	
+	float mind = d2(pos, l.p[0]);
+	float dist = d2(pos, l.p[1]);
+	if (dist < mind)
+	{
+		return dist;
+	}
+	return mind;
 }
 
 Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2)
 {
 	float d;
 	Line *l;
-	getClosestLinePoint(info, pos, &d, &l);
 
 	for (auto& line : info->lines)
 	{

@@ -10,6 +10,11 @@ inline float d2(sf::Vector2f v1, sf::Vector2f v2)
 	return v.x * v.x + v.y * v.y;
 }
 
+inline float dot(sf::Vector2f v1, sf::Vector2f v2)
+{
+	return v1.x * v2.x + v1.y * v2.y;
+}
+
 inline bool same(sf::Vector2f v1, sf::Vector2f v2)
 {
 	return fabs(v1.x - v2.x) < EPS && fabs(v1.y - v2.y) < EPS;
