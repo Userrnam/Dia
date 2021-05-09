@@ -10,6 +10,11 @@
 #include "Drawer.hpp"
 #include "CommandLine.hpp"
 
+enum class State
+{
+	None,
+	CommandLine
+};
 
 const sf::Color gridColor = sf::Color(200, 200, 200, 255);
 
@@ -74,7 +79,7 @@ void drawGrid(AppInfo *info)
 	info->window->draw(va);
 }
 
-void drawAppMode(AppInfo *info)
+void drawAppMode(AppInfo *info, State& state)
 {
 	sf::Text text;
 	text.setFont(info->font);
@@ -82,7 +87,14 @@ void drawAppMode(AppInfo *info)
 	text.setPosition(10, 10);
 	text.setFillColor(sf::Color::Black);
 
-	text.setString(info->pCurrentMode->getModeDescription());
+	if (state == State::None)
+	{
+		text.setString(info->pCurrentMode->getModeDescription());
+	}
+	else
+	{
+		text.setString("Command Line");
+	}
 
 	info->window->draw(text);
 }
@@ -128,11 +140,242 @@ void drawCommandLine(AppInfo *info, const std::string& commandLine)
 
 const auto defaultWindowSize = sf::Vector2i(800, 600);
 
-enum class State
+void handleExport(AppInfo& app, Command& commad)
 {
-	None,
-	CommandLine
-};
+	sf::RenderTexture texture;
+
+	// figure out texture size
+	sf::Vector2f max, min;
+	if (app.lines.size())
+	{
+		max = app.lines[0].p[0];
+		min = max;
+	}
+	else if (app.circles.size())
+	{
+		max = app.circles[0].center;
+		min = max;
+	}
+	else if (app.texts.size())
+	{
+		max.x = app.texts[0].bounding.left;
+		max.y = app.texts[0].bounding.top;
+		min = max;
+	}
+	// return, diagram is empty
+	else
+	{
+		return;
+	}
+
+	for (auto& line : app.lines)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			if (line.p[i].x < min.x)   min.x = line.p[i].x;
+			if (line.p[i].x > max.x)   max.x = line.p[i].x;
+			if (line.p[i].y < min.y)   min.y = line.p[i].y;
+			if (line.p[i].y > max.y)   max.y = line.p[i].y;
+		}
+	}
+
+	for (auto& circle : app.circles)
+	{
+		if (circle.center.x - circle.radius < min.x)
+			min.x = circle.center.x - circle.radius;
+		if (circle.center.x + circle.radius > max.x)
+			max.x = circle.center.x + circle.radius;
+		if (circle.center.y - circle.radius < min.y)
+			min.y = circle.center.y - circle.radius;
+		if (circle.center.y + circle.radius > max.y)
+			max.y = circle.center.y + circle.radius;
+	}
+
+	for (auto& text : app.texts)
+	{
+		for (int i = 0; i < 2; ++i)
+		{
+			if (text.bounding.left < min.x)  min.x = text.bounding.left;
+			if (text.bounding.top < min.y)   min.y = text.bounding.top;
+			if (text.bounding.left + text.bounding.width > max.x)
+				max.x = text.bounding.left + text.bounding.width;
+			if (text.bounding.top + text.bounding.height > max.y)
+				max.x = text.bounding.top + text.bounding.height;
+		}
+	}
+
+	float scale = commad.intParam[0] * 0.01;
+	float textureWidth =  (max.x-min.x) * scale + 20;
+	float textureHeight = (max.y-min.y) * scale + 20;
+
+	sf::RenderTexture renderTexture;
+	if (!renderTexture.create(textureWidth, textureHeight))
+	{
+		return;
+	}
+
+	sf::Transform transform;
+	min  *= scale;
+	min -= sf::Vector2f(10, 10);
+	transform.translate(-min);
+	transform.scale(scale, scale);
+
+	renderTexture.clear(sf::Color::White);
+
+	drawLines(app.lines, &renderTexture, &transform);
+	drawCircles(app.circles, &renderTexture, &transform);
+	drawTexts(app.texts, &renderTexture, false, &transform);
+
+	auto filename = commad.stringParam[0];
+
+	renderTexture.display();
+	renderTexture.getTexture().copyToImage().saveToFile(filename);
+}
+
+void handleSet(AppInfo& app, Command& command)
+{
+	if (command.target == Command::Line)
+	{
+		if (command.global)
+		{
+			if (command.paramType == Command::LineWidth)
+			{
+				for (auto& line : app.lines)
+				{
+					line.width = command.intParam[0];
+				}
+			}
+			else if (command.paramType == Command::LineColor)
+			{
+				for (auto& line : app.lines)
+				{
+					line.color.r = command.intParam[0];
+					line.color.g = command.intParam[1];
+					line.color.b = command.intParam[2];
+					line.color.a = command.intParam[3];
+				}
+			}
+		}
+		else
+		{
+			if (command.paramType == Command::LineWidth)
+			{
+				// FIXME
+				for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
+				{
+					line->width = command.intParam[0];
+				}
+			}
+			else if (command.paramType == Command::LineColor)
+			{
+				// FIXME
+				for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
+				{
+					line->color.r = command.intParam[0];
+					line->color.g = command.intParam[1];
+					line->color.b = command.intParam[2];
+					line->color.a = command.intParam[3];
+				}
+			}
+		}
+	}
+	else if (command.target == Command::Circle)
+	{
+		if (command.global)
+		{
+			if (command.paramType == Command::CircleBorderWidth)
+			{
+				for (auto& circle : app.circles)
+				{
+					circle.outlineThickness = command.intParam[0];
+				}
+			}
+			else if (command.paramType == Command::CircleBorderColor)
+			{
+				for (auto& circle : app.circles)
+				{
+					circle.outlineColor.r = command.intParam[0];
+					circle.outlineColor.g = command.intParam[1];
+					circle.outlineColor.b = command.intParam[2];
+					circle.outlineColor.a = command.intParam[3];
+				}
+			}
+			else if (command.paramType == Command::CircleFillColor)
+			{
+				for (auto& circle : app.circles)
+				{
+					circle.color.r = command.intParam[0];
+					circle.color.g = command.intParam[1];
+					circle.color.b = command.intParam[2];
+					circle.color.a = command.intParam[3];
+				}
+			}
+		}
+		else
+		{
+			if (command.paramType == Command::CircleBorderWidth)
+			{
+				// FIXME
+				for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+				{
+					circle->outlineThickness = command.intParam[0];
+				}
+			}
+			else if (command.paramType == Command::CircleBorderColor)
+			{
+				// FIXME
+				for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+				{
+					circle->outlineColor.r = command.intParam[0];
+					circle->outlineColor.g = command.intParam[1];
+					circle->outlineColor.b = command.intParam[2];
+					circle->outlineColor.a = command.intParam[3];
+				}
+			}
+			else if (command.paramType == Command::CircleFillColor)
+			{
+				// FIXME
+				for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+				{
+					circle->color.r = command.intParam[0];
+					circle->color.g = command.intParam[1];
+					circle->color.b = command.intParam[2];
+					circle->color.a = command.intParam[3];
+				}
+			}
+		}
+	}
+	else if (command.target == Command::Text)
+	{
+		if (command.global)
+		{
+			if (command.paramType == Command::TextSize)
+			{
+				for (auto& text : app.texts)
+				{
+					text.text.setCharacterSize(command.intParam[0]);
+					text.bounding = text.text.getGlobalBounds();
+				}
+			}
+		}
+		else
+		{
+			if (command.paramType == Command::TextSize)
+			{
+				// FIXME
+				for (auto text : reinterpret_cast<EditMode*>(app.modes[1])->selection.texts)
+				{
+					text->text.setCharacterSize(command.intParam[0]);
+					text->bounding = text->text.getGlobalBounds();
+				}
+			}
+		}
+	}
+	else
+	{
+		std::cout << "Error\n";
+	}
+}
 
 void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, State& state)
 {
@@ -151,147 +394,15 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, Sta
 				std::cout << "failed to parse command\n";
 				return;
 			}
-			if (command.target == Command::Line)
+			if (command.type == Command::Set)
 			{
-				if (command.global)
-				{
-					if (command.paramType == Command::LineWidth)
-					{
-						for (auto& line : app.lines)
-						{
-							line.width = command.param[0];
-						}
-					}
-					else if (command.paramType == Command::LineColor)
-					{
-						for (auto& line : app.lines)
-						{
-							line.color.r = command.param[0];
-							line.color.g = command.param[1];
-							line.color.b = command.param[2];
-							line.color.a = command.param[3];
-						}
-					}
-				}
-				else
-				{
-					if (command.paramType == Command::LineWidth)
-					{
-						// FIXME
-						for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
-						{
-							line->width = command.param[0];
-						}
-					}
-					else if (command.paramType == Command::LineColor)
-					{
-						// FIXME
-						for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
-						{
-							line->color.r = command.param[0];
-							line->color.g = command.param[1];
-							line->color.b = command.param[2];
-							line->color.a = command.param[3];
-						}
-					}
-				}
+				handleSet(app, command);
 			}
-			else if (command.target == Command::Circle)
+			else if (command.type == Command::Export)
 			{
-				if (command.global)
-				{
-					if (command.paramType == Command::CircleBorderWidth)
-					{
-						for (auto& circle : app.circles)
-						{
-							circle.outlineThickness = command.param[0];
-						}
-					}
-					else if (command.paramType == Command::CircleBorderColor)
-					{
-						for (auto& circle : app.circles)
-						{
-							circle.outlineColor.r = command.param[0];
-							circle.outlineColor.g = command.param[1];
-							circle.outlineColor.b = command.param[2];
-							circle.outlineColor.a = command.param[3];
-						}
-					}
-					else if (command.paramType == Command::CircleFillColor)
-					{
-						for (auto& circle : app.circles)
-						{
-							circle.color.r = command.param[0];
-							circle.color.g = command.param[1];
-							circle.color.b = command.param[2];
-							circle.color.a = command.param[3];
-						}
-					}
-				}
-				else
-				{
-					if (command.paramType == Command::CircleBorderWidth)
-					{
-						// FIXME
-						for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
-						{
-							circle->outlineThickness = command.param[0];
-						}
-					}
-					else if (command.paramType == Command::CircleBorderColor)
-					{
-						// FIXME
-						for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
-						{
-							circle->outlineColor.r = command.param[0];
-							circle->outlineColor.g = command.param[1];
-							circle->outlineColor.b = command.param[2];
-							circle->outlineColor.a = command.param[3];
-						}
-					}
-					else if (command.paramType == Command::CircleFillColor)
-					{
-						// FIXME
-						for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
-						{
-							circle->color.r = command.param[0];
-							circle->color.g = command.param[1];
-							circle->color.b = command.param[2];
-							circle->color.a = command.param[3];
-						}
-					}
-				}
+				handleExport(app, command);
 			}
-			else if (command.target == Command::Text)
-			{
-				if (command.global)
-				{
-					if (command.paramType == Command::TextSize)
-					{
-						for (auto& text : app.texts)
-						{
-							text.text.setCharacterSize(command.param[0]);
-							text.bounding = text.text.getGlobalBounds();
-						}
-					}
-				}
-				else
-				{
-					if (command.paramType == Command::TextSize)
-					{
-						// FIXME
-						for (auto text : reinterpret_cast<EditMode*>(app.modes[1])->selection.texts)
-						{
-							text->text.setCharacterSize(command.param[0]);
-							text->bounding = text->text.getGlobalBounds();
-						}
-					}
-				}
-			}
-			else
-			{
-				std::cout << "Error\n";
-			}
+
 			commandLine = "";
 		}
 		else if (e.key.code == sf::Keyboard::Backspace)
@@ -299,6 +410,10 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, Sta
 			if (commandLine.size())
 			{
 				commandLine.pop_back();
+				if (commandLine.size() == 0)
+				{
+					state = State::None;
+				}
 			}
 		}
 		else if (charPrintable(e.key))
@@ -445,7 +560,7 @@ int main()
 			}
 			else if (e.type == sf::Event::KeyPressed)
 			{
-				if (e.key.code == sf::Keyboard::SemiColon)
+				if (e.key.code == sf::Keyboard::SemiColon && e.key.shift)
 				{
 					state = State::CommandLine;
 					commandLine = "";
@@ -565,7 +680,7 @@ EndOfEvent:
 		drawSnappedPoint(&app);
 
 		window.setView(app.defaultView);
-		drawAppMode(&app);
+		drawAppMode(&app, state);
 		drawGridSize(&app);
 		drawCommandLine(&app, commandLine);
 

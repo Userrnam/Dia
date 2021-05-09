@@ -11,7 +11,7 @@ bool parseInt(std::stringstream& ss, Command& command)
 	{
 		try
 		{
-			command.param[0] = std::stoi(param);
+			command.intParam[0] = std::stoi(param);
 		}
 		catch (...)
 		{
@@ -35,7 +35,7 @@ bool parseColor(std::stringstream& ss, Command& command)
 		{
 			try
 			{
-				command.param[i] = std::stoi(param);
+				command.intParam[i] = std::stoi(param);
 			}
 			catch (...)
 			{
@@ -51,15 +51,8 @@ bool parseColor(std::stringstream& ss, Command& command)
 	return true;
 }
 
-Command parseCommand(const std::string cmdLine, bool *success)
+bool handleSet(Command& command, std::stringstream& ss)
 {
-	Command command;
-
-	command.param[3] = 255;
-
-	*success = false;
-
-	std::stringstream ss(cmdLine);
 
 	std::string cmd;
 	ss >> cmd;
@@ -71,16 +64,16 @@ Command parseCommand(const std::string cmdLine, bool *success)
 		if (cmd.find("width") != std::string::npos)
 		{
 			command.paramType = Command::LineWidth;
-			if (!parseInt(ss, command))   return command;
+			if (!parseInt(ss, command))   return false;
 		}
 		else if (cmd.find("color") != std::string::npos)
 		{
 			command.paramType = Command::LineColor;
-			if (!parseColor(ss, command))   return command;
+			if (!parseColor(ss, command))   return false;
 		}
 		else
 		{
-			return command;
+			return false;
 		}
 	}
 	else if (cmd.find("circle") != std::string::npos)
@@ -89,21 +82,21 @@ Command parseCommand(const std::string cmdLine, bool *success)
 		if (cmd.find("borderWidth") != std::string::npos)
 		{
 			command.paramType = Command::CircleBorderWidth;
-			if (!parseInt(ss, command))   return command;
+			if (!parseInt(ss, command))   return false;
 		}
 		else if (cmd.find("fillColor") != std::string::npos)
 		{
 			command.paramType = Command::CircleFillColor;
-			if (!parseColor(ss, command))   return command;
+			if (!parseColor(ss, command))   return false;
 		}
 		else if (cmd.find("borderColor") != std::string::npos)
 		{
 			command.paramType = Command::CircleBorderColor;
-			if (!parseColor(ss, command))   return command;
+			if (!parseColor(ss, command))   return false;
 		}
 		else
 		{
-			return command;
+			return false;
 		}
 	}
 	else if (cmd.find("text") != std::string::npos)
@@ -112,19 +105,81 @@ Command parseCommand(const std::string cmdLine, bool *success)
 		if (cmd.find("size"))
 		{
 			command.paramType = Command::TextSize;
-			if (!parseInt(ss, command))   return command;
+			if (!parseInt(ss, command))   return false;
 		}
 		else
 		{
-			return command;
+			return false;
 		}
 	}
 	else
 	{
-		return command;
+		return false;
+	}
+	
+	return true;
+}
+
+// format is name scale in percent
+bool handleExport(Command& command, std::stringstream& ss)
+{
+	// read name
+	if (ss >> command.stringParam[0])
+	{
+		std::string word;
+
+		// read scale
+		if (ss >> word)
+		{
+			try
+			{
+				command.intParam[0] = std::stoi(word);
+			}
+			catch(...)
+			{
+				return false;
+			}
+		}
+		else
+		{
+			// default to 100 if scale was not specified
+			command.intParam[0] = 100;
+		}
+	}
+	else
+	{
+		return false;
 	}
 
-	*success = true;
+	return true;
+}
+
+Command parseCommand(const std::string cmdLine, bool *success)
+{
+	Command command;
+
+	// in case we read color
+	command.intParam[3] = 255;
+	std::stringstream ss(cmdLine);
+
+	std::string type;
+	if (ss >> type)
+	{
+		if (type == ":set")
+		{
+			command.type = Command::Set;
+			*success = handleSet(command, ss);
+		}
+		else if (type == ":export")
+		{
+			command.type = Command::Export;
+			*success = handleExport(command, ss);
+		}
+	}
+	else
+	{
+		*success = false;
+	}
 
 	return command;
 }

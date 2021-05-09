@@ -2,9 +2,12 @@
 #include "utils.hpp"
 
 
-void drawCircles(const std::vector<Circle>& circles, sf::RenderWindow *window)
+void drawCircles(const std::vector<Circle>& circles, sf::RenderTarget *window, sf::Transform *t)
 {
 	sf::CircleShape shape;
+
+	sf::RenderStates states;
+	if (t)   states.transform = *t;
 
 	for (auto &circle : circles)
 	{
@@ -16,14 +19,17 @@ void drawCircles(const std::vector<Circle>& circles, sf::RenderWindow *window)
 		shape.setPosition(circle.center);
 		shape.setOrigin(shape.getRadius(), shape.getRadius());
 
-		window->draw(shape);
+		window->draw(shape, states);
 	}
 }
-void drawLines(const std::vector<Line>& lines, sf::RenderWindow *window)
+void drawLines(const std::vector<Line>& lines, sf::RenderTarget *window, sf::Transform *t)
 {
 	sf::VertexArray va;
 	va.setPrimitiveType(sf::PrimitiveType::Quads);
 	va.resize(lines.size() * 4);
+
+	sf::RenderStates states;
+	if (t)   states.transform = *t;
 
 	int k = 0;
 	for (auto line : lines)
@@ -55,13 +61,16 @@ void drawLines(const std::vector<Line>& lines, sf::RenderWindow *window)
 
 	}
 
-	window->draw(va);
+	window->draw(va, states);
 }
 
-void drawTexts(const std::vector<Text>& texts, sf::RenderWindow *window, bool drawBack)
+void drawTexts(const std::vector<Text>& texts, sf::RenderTarget *window, bool drawBack, sf::Transform *t)
 {
 	sf::RectangleShape rect;
 	rect.setFillColor(sf::Color(170, 170, 0, 50));
+
+	sf::RenderStates states;
+	if (t)   states.transform = *t;
 
 	for (auto& t : texts)
 	{
@@ -71,7 +80,7 @@ void drawTexts(const std::vector<Text>& texts, sf::RenderWindow *window, bool dr
 			rect.setSize(sf::Vector2f(t.bounding.width, t.bounding.height));
 			window->draw(rect);
 		}
-		window->draw(t.text);
+		window->draw(t.text, states);
 	}
 }
 

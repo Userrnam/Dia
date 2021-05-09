@@ -10,6 +10,11 @@ inline float d2(sf::Vector2f v1, sf::Vector2f v2)
 	return v.x * v.x + v.y * v.y;
 }
 
+inline void print(sf::Vector2f v)
+{
+	std::cout << "{" << v.x << "; " << v.y << "}\n";
+}
+
 inline float dot(sf::Vector2f v1, sf::Vector2f v2)
 {
 	return v1.x * v2.x + v1.y * v2.y;

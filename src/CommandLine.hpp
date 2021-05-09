@@ -22,10 +22,19 @@ struct Command
 		TextSize,
 	};
 
+	enum Type
+	{
+		Set, Export
+	};
+
 	bool global;
+
+	Type type;
 	Target target;
 	Param paramType;
-	int param[4];
+
+	int intParam[4];
+	std::string stringParam[4];
 };
 
 Command parseCommand(const std::string cmd, bool *success);
