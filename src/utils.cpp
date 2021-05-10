@@ -229,3 +229,28 @@ bool charPrintable(sf::Event::KeyEvent& e)
 	return false;
 }
 
+sf::Vector2f getCharacterSize(const sf::Font *font, int size)
+{
+	sf::Text t;
+	t.setFont(*font);
+	t.setCharacterSize(size);
+	t.setString("H");
+	auto bounding = t.getGlobalBounds();
+	return sf::Vector2f(bounding.width, bounding.height);
+}
+
+void updateBoundingBox(Text *text)
+{
+	text->bounding = text->text.getGlobalBounds();
+	auto size = getCharacterSize(text->text.getFont(), text->text.getCharacterSize());
+	if (text->bounding.height < 10)
+	{
+		text->bounding.height = size.y;
+		text->bounding.top   -= size.y;
+	}
+	if (text->bounding.width < 10)
+	{
+		text->bounding.width = size.x;
+	}
+}
+

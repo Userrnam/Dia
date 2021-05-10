@@ -57,3 +57,6 @@ Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2);
 char getCharFromKeyEvent(sf::Event::KeyEvent& e);
 bool charPrintable(sf::Event::KeyEvent& e);
 
+sf::Vector2f getCharacterSize(const sf::Font *font, int size);
+void updateBoundingBox(Text *text);
+

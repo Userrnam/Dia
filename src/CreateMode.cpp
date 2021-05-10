@@ -52,6 +52,7 @@ static void handleButtonPress(AppInfo *info, sf::Event& e)
 		info->state = State::CNewText;
 		info->texts.push_back({});
 		info->texts.back().text.setFont(info->font);
+		// FIXME add ability to change default character size
 		info->texts.back().text.setCharacterSize(35);
 		info->texts.back().text.setFillColor(sf::Color::Black);
 		info->texts.back().text.setPosition(snap(info, pos));
@@ -123,8 +124,7 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 			info->texts.back().text.setString(s + getCharFromKeyEvent(e.key));
 		}
 
-		// update bounding box
-		info->texts.back().bounding = info->texts.back().text.getGlobalBounds();
+		updateBoundingBox(&info->texts.back());
 	}
 }
 

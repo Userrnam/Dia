@@ -92,6 +92,7 @@ std::string getDescription(AppInfo *info)
 		case State::ESelectionRectangle:    return "Selection Rectangle";
 		case State::EMovingSelection:       return "Moving Selection";
 		case State::EMovingCopy:            return "Moving Copy";
+		case State::EEditText:              return "Edit Text";
 		default: return "Error: Unhandled State";
 	}
 }
@@ -444,6 +445,7 @@ int main()
 	app.defaultView = app.camera;
 
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
+	// get approximate character size
 
 //	app.modes.push_back(new CreateMode(sf::Keyboard::C, &app));
 //	app.modes.push_back(new EditMode(sf::Keyboard::E, &app));

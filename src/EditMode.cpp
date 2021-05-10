@@ -171,8 +171,17 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 		info->state = State::EPoint;
 
 	sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
-	if (info->state == State::EPoint || info->shiftPressed && info->state == State::EMovingSelection)
+	if (info->state == State::EPoint || info->shiftPressed && info->state == State::EMovingSelection
+			|| info->state == State::EEditText)
 	{
+		if (info->state == State::EEditText)
+		{
+			if (info->selection.texts.back()->text.getString().getSize() == 0)
+			{
+				removeSelection(&info->selection, info);
+				info->selection.clear();
+			}
+		}
 		// check texts
 		for (auto& t : info->texts)
 		{
@@ -323,20 +332,56 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	{
 		info->state = State::EPoint;
 	}
+	else if (info->state == State::EEditText)
+	{
+		std::cout << "(3902)Error: Unhandled case" << std::endl;
+	}
 }
 
 static void handleKeyPress(AppInfo *info, sf::Event& e)
 {
-	if (e.key.code == sf::Keyboard::D)
+	if (info->state != State::EEditText)
 	{
-		removeSelection(&info->selection, info);
+		if (e.key.code == sf::Keyboard::D)
+		{
+			removeSelection(&info->selection, info);
+		}
+		else if (e.key.code == sf::Keyboard::Y)
+		{
+			info->referencePoint = info->selection.closestPoint(info->snappedPos);
+			info->copyInfo.clear();
+			copySelectionToCopyInfo(&info->copyInfo, &info->selection);
+			info->state = State::EMovingCopy;
+		}
+		else if (e.key.code == sf::Keyboard::T)
+		{
+			if (info->selection.size() == 1 && info->selection.texts.size() == 1)
+			{
+				info->state = State::EEditText;
+			}
+		}
 	}
-	else if (e.key.code == sf::Keyboard::Y)
+	else
 	{
-		info->referencePoint = info->selection.closestPoint(info->snappedPos);
-		info->copyInfo.clear();
-		copySelectionToCopyInfo(&info->copyInfo, &info->selection);
-		info->state = State::EMovingCopy;
+		auto *text = info->selection.texts.back();
+		auto s = text->text.getString();
+		if (e.key.code == sf::Keyboard::BackSpace)
+		{
+			if (s.getSize() == 0)
+			{
+				return;
+			}
+
+			s.erase(s.getSize()-1);
+			text->text.setString(s);
+		}
+
+		if (charPrintable(e.key))
+		{
+			text->text.setString(s + getCharFromKeyEvent(e.key));
+		}
+
+		updateBoundingBox(text);
 	}
 }
 
