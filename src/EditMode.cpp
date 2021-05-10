@@ -352,6 +352,10 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 			info->copyInfo.clear();
 			copySelectionToCopyInfo(&info->copyInfo, &info->selection);
 			info->state = State::EMovingCopy;
+
+			auto mov = info->snappedPos - info->referencePoint;			
+			info->referencePoint = info->snappedPos;
+			info->copyInfo.move(mov);
 		}
 		else if (e.key.code == sf::Keyboard::T)
 		{
