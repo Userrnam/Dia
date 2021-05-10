@@ -9,6 +9,7 @@
 #include "utils.hpp"
 #include "Drawer.hpp"
 #include "CommandLine.hpp"
+#include "LoadSave.hpp"
 
 const sf::Color gridColor = sf::Color(200, 200, 200, 255);
 
@@ -382,6 +383,25 @@ void handleSet(AppInfo& app, Command& command)
 	}
 }
 
+void handleLoad(AppInfo& app, Command& command)
+{
+	bool success;
+	AppInfo info = loadProject(command.stringParam[0], &success, &app.font);
+	if (!success)
+	{
+		return;
+	}
+	
+	app.lines = info.lines;
+	app.circles = info.circles;
+	app.texts = info.texts;
+}
+
+void handleSave(AppInfo& app, Command& command)
+{
+	saveProject(&app, command.stringParam[0]);
+}
+
 void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 {
 	if (e.type == sf::Event::KeyPressed)
@@ -406,6 +426,14 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 			else if (command.type == Command::Export)
 			{
 				handleExport(app, command);
+			}
+			else if (command.type == Command::Load)
+			{
+				handleLoad(app, command);
+			}
+			else if (command.type == Command::Save)
+			{
+				handleSave(app, command);
 			}
 		}
 		else if (e.key.code == sf::Keyboard::Backspace)
@@ -445,22 +473,12 @@ int main()
 	app.defaultView = app.camera;
 
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
-	// get approximate character size
 
-//	app.modes.push_back(new CreateMode(sf::Keyboard::C, &app));
-//	app.modes.push_back(new EditMode(sf::Keyboard::E, &app));
-
-//	app.pCurrentMode = app.modes[0];
-//	app.pCurrentMode->onEnter();
 	app.previousState = State::CLine;
 	onCreateEnter(&app);
 
 	bool middleButtonPressed = false;
 	sf::Vector2f posWhenMiddleButtonPressed;
-
-	// 0 - create mode, 1 - edit mode
-	int currentModeIndex = 0;
-	bool modeSwitch = false;
 
 	std::string commandLine;
 
@@ -523,6 +541,7 @@ int main()
 					middleButtonPressed = false;
 					auto current = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 					app.camera.move(posWhenMiddleButtonPressed-current);
+					goto EndOfEvent;
 				}
 			}
 

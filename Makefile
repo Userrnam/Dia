@@ -3,6 +3,9 @@ all: a.out
 bin/utils.o: src/utils.cpp src/utils.hpp
 	clang++ -g -c src/utils.cpp -o bin/utils.o -std=c++11 -g
 
+bin/LoadSave.o: src/LoadSave.cpp src/LoadSave.hpp
+	clang++ -g -c src/LoadSave.cpp -o bin/LoadSave.o -std=c++11 -g
+
 bin/CommandLine.o: src/CommandLine.cpp src/CommandLine.hpp
 	clang++ -g -c src/CommandLine.cpp -o bin/CommandLine.o -std=c++11 -g
 
@@ -24,7 +27,7 @@ bin/main.o: src/main.cpp src/utils.hpp src/CreateMode.hpp src/EditMode.hpp src/D
 clean:
 	rm bin/*
 
-a.out: bin/main.o bin/utils.o bin/CreateMode.o bin/EditMode.o bin/Drawer.o bin/CommandLine.o bin/Selection.o
+a.out: bin/main.o bin/utils.o bin/CreateMode.o bin/EditMode.o bin/Drawer.o bin/CommandLine.o bin/Selection.o bin/LoadSave.o
 	clang++ -lsfml-graphics -lsfml-window -lsfml-system bin/*.o -o bin/a.out -g
 
 run: a.out

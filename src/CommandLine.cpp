@@ -51,7 +51,7 @@ bool parseColor(std::stringstream& ss, Command& command)
 	return true;
 }
 
-bool handleSet(Command& command, std::stringstream& ss)
+static bool handleSet(Command& command, std::stringstream& ss)
 {
 
 	std::string cmd;
@@ -121,7 +121,7 @@ bool handleSet(Command& command, std::stringstream& ss)
 }
 
 // format is name scale in percent
-bool handleExport(Command& command, std::stringstream& ss)
+static bool handleExport(Command& command, std::stringstream& ss)
 {
 	// read name
 	if (ss >> command.stringParam[0])
@@ -154,6 +154,36 @@ bool handleExport(Command& command, std::stringstream& ss)
 	return true;
 }
 
+static bool handleLoad(Command& command, std::stringstream& ss)
+{
+	std::string word;
+
+	if (ss >> word)
+	{
+		command.stringParam[0] = word;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+static bool handleSave(Command& command, std::stringstream& ss)
+{
+	std::string word;
+
+	if (ss >> word)
+	{
+		command.stringParam[0] = word;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 Command parseCommand(const std::string cmdLine, bool *success)
 {
 	Command command;
@@ -174,6 +204,16 @@ Command parseCommand(const std::string cmdLine, bool *success)
 		{
 			command.type = Command::Export;
 			*success = handleExport(command, ss);
+		}
+		else if (type == ":load")
+		{
+			command.type = Command::Load;
+			*success = handleLoad(command, ss);
+		}
+		else if (type == ":save")
+		{
+			command.type = Command::Save;
+			*success = handleSave(command, ss);
 		}
 	}
 	else

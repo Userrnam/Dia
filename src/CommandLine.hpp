@@ -24,7 +24,7 @@ struct Command
 
 	enum Type
 	{
-		Set, Export
+		Set, Export, Save, Load
 	};
 
 	bool global;
