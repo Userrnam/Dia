@@ -2,7 +2,7 @@
 #include "utils.hpp"
 #include "Drawer.hpp"
 
-#define MAX_SELECT_DISTANCE 20
+#define MAX_SELECT_DISTANCE 20.0f
 
 const sf::Color selectionColor = sf::Color(70,70,180,90);
 
@@ -166,6 +166,9 @@ static void handleMouseMoveEvent(AppInfo *info, sf::Event& e)
 
 static void handleButtonPressed(AppInfo *info, sf::Event& e)
 {
+	if (e.mouseButton.button != sf::Mouse::Button::Right)
+		std::cout << "(3240)Error: Unexpected Mouse Button: " << (int)e.mouseButton.button << std::endl;
+
 	// TODO When is it true?
 	if (info->state == State::ESelectEnd)
 		info->state = State::EPoint;
@@ -182,6 +185,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				info->selection.clear();
 			}
 		}
+
 		// check texts
 		for (auto& t : info->texts)
 		{
@@ -204,82 +208,99 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 			}
 		}
 		
-		Line *ll;
-		float dist2;
-		sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2, &ll);
-		if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+		// check points at the ends of lines
 		{
-			if (info->selection.contains(ll) && info->selection.size() > 1)
+			Line *line;
+			float dist2;
+			sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2, &line);
+			auto dmax = MAX_SELECT_DISTANCE * info->cameraZoom;
+			if (dist2 < dmax * dmax)
 			{
-				info->state = State::EMovingSelection;
-				info->movingSelectionReferencePoint = *p;
+				if (info->selection.contains(line) && info->selection.size() > 1)
+				{
+					info->state = State::EMovingSelection;
+					info->movingSelectionReferencePoint = *p;
+					return;
+				}
+
+				// if user clicks on point, it cannot be a selection
+				info->state = State::EMovingPoint;
+				info->pVec = p;
 				return;
 			}
-
-			// if user clicks on point, it cannot be a selection
-			info->state = State::EMovingPoint;
-			info->pVec = p;
-			return;
 		}
 
-		float dist3;
-		Circle *p2 = getClosestCircle(info, pos, &dist3);
-		if (dist3 < dist2 && dist3 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+		// check circles
 		{
-			if (info->selection.contains(p2) && info->selection.size() > 1)
+			float dist2;
+			Circle *circle = getClosestCircle(info, pos, &dist2);
+			auto dmax = MAX_SELECT_DISTANCE * info->cameraZoom;
+			if (dist2 < dmax * dmax)
 			{
-				info->state = State::EMovingSelection;
-				info->movingSelectionReferencePoint = p2->center;
+				if (info->selection.contains(circle) && info->selection.size() > 1)
+				{
+					info->state = State::EMovingSelection;
+					info->movingSelectionReferencePoint = circle->center;
+					return;
+				}
+
+				if (!info->shiftPressed)  info->selection.clear();
+				info->selection.add(circle);
+				info->state = State::ESelectElement;
+				info->possibleNextState = State::EMovingPoint;
+				info->pVec = &circle->center;
+
+				if (info->shiftPressed)
+				{
+					info->possibleNextState = State::EChangingCircleRadius;
+					info->pCircle = circle;
+				}
 				return;
 			}
-
-			if (!info->shiftPressed)  info->selection.clear();
-			info->selection.add(p2);
-			info->state = State::ESelectElement;
-			info->possibleNextState = State::EMovingPoint;
-			info->pVec = &p2->center;
-
-			if (info->shiftPressed)
-			{
-				info->possibleNextState = State::EChangingCircleRadius;
-				info->pCircle = p2;
-			}
-			return;
 		}
 
 		// check line
-		Line *pL = getClosestLine(info, pos, &dist2);
-		if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
 		{
-			float dl1 = d2(pos, pL->p[0]);
-			float dl2 = d2(pos, pL->p[1]);
+			float dist2;
+			Line *line = getClosestLine(info, pos, &dist2);
 
-			if (dl1 < dl2)
+			auto dmax = MAX_SELECT_DISTANCE * info->cameraZoom;
+			if (dist2 < dmax * dmax)
 			{
-				info->pVec = &pL->p[0];
-			}
-			else
-			{
-				info->pVec = &pL->p[1];
-			}
+				float dl1 = d2(pos, line->p[0]);
+				float dl2 = d2(pos, line->p[1]);
 
-			if (info->selection.contains(pL))
-			{
-				info->state = State::EMovingSelection;
-				info->movingSelectionReferencePoint = *info->pVec;
+				if (dl1 < dl2)
+				{
+					info->pVec = &line->p[0];
+				}
+				else
+				{
+					info->pVec = &line->p[1];
+				}
+
+				if (info->selection.contains(line))
+				{
+					info->state = State::EMovingSelection;
+					info->movingSelectionReferencePoint = *info->pVec;
+					return;
+				}
+
+				if (!info->shiftPressed)  info->selection.clear();
+				info->selection.add(line);
+				info->state = State::ESelectElement;
+				info->possibleNextState = State::EMovingLine;
+				info->pLine = line;
+
 				return;
 			}
-
-			if (!info->shiftPressed)  info->selection.clear();
-			info->selection.add(pL);
-			info->state = State::ESelectElement;
-			info->possibleNextState = State::EMovingLine;
-			info->pLine = pL;
-
-			return;
 		}
 
-		info->selection.clear();
+		// if we did't hit anything, start selection
+		// rectangle
+
+		if (!info->shiftPressed)
+			info->selection.clear();
 
 		info->state = State::ESelectionRectangle;
 		info->selectionRectangle.left = pos.x;

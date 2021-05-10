@@ -540,6 +540,7 @@ int main()
 				{
 					middleButtonPressed = true;
 					posWhenMiddleButtonPressed = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
+					goto EndOfEvent;
 				}
 
 				if (e.mouseButton.button == sf::Mouse::Button::Left 
@@ -573,7 +574,8 @@ int main()
 				if (middleButtonPressed)
 				{
 					auto current = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
-					app.camera.move(posWhenMiddleButtonPressed-current);
+					auto v = posWhenMiddleButtonPressed-current;
+					app.camera.move(v * app.cameraZoom);
 					posWhenMiddleButtonPressed = current;
 				}
 
