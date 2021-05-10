@@ -1,83 +1,95 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include <iostream>
+#include "Elements.hpp"
+#include "Selection.hpp"
 
-struct Line
+
+#define _STATE_NUMBER(stateId, state)\
+	state << 3 | ((unsigned)stateId)
+
+enum class StateType
 {
-	sf::Vector2f p[2];
-	sf::Color color = sf::Color::Black;
-	float width = 4;
-
-	void print()
-	{
-		std::cout << "{" << p[0].x << ";" << p[0].y << "}; ";
-		std::cout << "{" << p[1].x << ";" << p[1].y << "}";
-	}
+	Create = 1,
+	Edit   = 2,
+	Cmd    = 3,
+	None   = 4,
 };
 
-// may be we can use just sf::CircleShape?
-struct Circle
+enum class State
 {
-	sf::Vector2f center;
-	float radius;
-	sf::Color outlineColor = sf::Color::Black;
-	sf::Color color = sf::Color(0,0,0,0);
-	float outlineThickness = 4;
+	None         = _STATE_NUMBER(StateType::None, 1),
+	CommandLine  = _STATE_NUMBER(StateType::Cmd, 1),
+
+	EPoint                = _STATE_NUMBER(StateType::Edit, 1),
+	EMovingPoint          = _STATE_NUMBER(StateType::Edit, 2),
+	EMovingLine           = _STATE_NUMBER(StateType::Edit, 3),
+	EMovingSelection      = _STATE_NUMBER(StateType::Edit, 4),
+	ESelectElement        = _STATE_NUMBER(StateType::Edit, 5),
+	ESelectEnd            = _STATE_NUMBER(StateType::Edit, 6),
+	ESelectionRectangle   = _STATE_NUMBER(StateType::Edit, 7),
+	EChangingCircleRadius = _STATE_NUMBER(StateType::Edit, 8),
+	EMovingText           = _STATE_NUMBER(StateType::Edit, 9),
+	EMovingCopy           = _STATE_NUMBER(StateType::Edit, 10),
+
+	CLine         = _STATE_NUMBER(StateType::Create, 1),
+	CNewLine      = _STATE_NUMBER(StateType::Create, 2),
+	CCircle       = _STATE_NUMBER(StateType::Create, 3),
+	CNewCircle    = _STATE_NUMBER(StateType::Create, 4),
+	CText         = _STATE_NUMBER(StateType::Create, 5),
+	CNewText      = _STATE_NUMBER(StateType::Create, 6),
 };
 
-struct Text
+inline StateType getStateType(State state)
 {
-	sf::Text text;
-	sf::FloatRect bounding;
-};
-
-struct Mode
-{
-	sf::Keyboard::Key key;
-	struct AppInfo *info;
-
-	Mode(sf::Keyboard::Key _k, struct AppInfo *_info) : key(_k), info(_info) {}
-
-	virtual void onEvent(sf::Event& e) = 0;
-	virtual void onExit()  = 0;
-	virtual void onEnter() = 0;
-	virtual std::string getModeDescription() = 0;
-
-	virtual void beforeDraw() {};
-	virtual void afterDraw() {};
-};
-
-/*
- *
-	virtual void onEvent(sf::Event& e) override {}
-	virtual void onExit()  override {}
-	virtual void onEnter() override {}
- * */
-
+	return (StateType)((unsigned)state & 0b111);
+}
 
 struct AppInfo
 {
-	int characterSize = 30;
-	sf::Font font;
+	// window
 	sf::RenderWindow *window;
 	sf::Vector2i windowSize;
-	int gridSize = 64;
-	Mode *pCurrentMode;
 
+	// TODO defautlts
+	int characterSize = 30;
+	int gridSize = 64;
+	sf::Font font;
+
+	// key pressed
 	bool shiftPressed = false;
+	bool snapping = true;
 
 	sf::Vector2f snappedPos;
+
+	// cammera
 	sf::View camera;
 	float cameraZoom = 1.0f;
 	sf::View defaultView;
 
-	bool snapping = true;
-
+	// Drawables
 	std::vector<Line> lines;
 	std::vector<Circle> circles;
 	std::vector<Text> texts;
 
-	std::vector<Mode *> modes;
+	State state = State::CLine;
+	State previousState = State::None;
+
+	// copy paste from EditMode
+	sf::Vector2f *pVec = 0;
+
+	Selection selection;
+	sf::FloatRect selectionRectangle;
+
+	CopyInfo copyInfo;
+
+	sf::Vector2f movingSelectionReferencePoint;
+
+	State possibleNextState = State::None;
+
+	Circle *pCircle = nullptr;
+	Text   *pText   = nullptr;
+	Line   *pLine   = nullptr;
+	sf::Vector2f point;
+	sf::Vector2f referencePoint;
 };
 

@@ -10,13 +10,8 @@
 #include "Drawer.hpp"
 #include "CommandLine.hpp"
 
-enum class State
-{
-	None,
-	CommandLine
-};
-
 const sf::Color gridColor = sf::Color(200, 200, 200, 255);
+
 
 void drawGrid(AppInfo *info)
 {
@@ -79,7 +74,29 @@ void drawGrid(AppInfo *info)
 	info->window->draw(va);
 }
 
-void drawAppMode(AppInfo *info, State& state)
+std::string getDescription(AppInfo *info)
+{
+	switch (info->state)
+	{
+		case State::None: return "Error: Current State Is None";
+		case State::CommandLine: return "CommandLine";
+		case State::CLine:   case State::CNewLine:     return "Create Line";
+		case State::CCircle: case State::CNewCircle:   return "Create Circle";
+		case State::CText:   case State::CNewText:     return "Create Text";
+		case State::EPoint:  case State::EMovingPoint: return "Edit Point";
+		case State::EChangingCircleRadius:  return "Change Circle Radius";
+		case State::EMovingText:            return "Moving Text";
+		case State::EMovingLine:            return "Moving Line";
+		case State::ESelectElement:         return "Select Element";
+		case State::ESelectEnd:             return "Select End";
+		case State::ESelectionRectangle:    return "Selection Rectangle";
+		case State::EMovingSelection:       return "Moving Selection";
+		case State::EMovingCopy:            return "Moving Copy";
+		default: return "Error: Unhandled State";
+	}
+}
+
+void drawAppMode(AppInfo *info)
 {
 	sf::Text text;
 	text.setFont(info->font);
@@ -87,14 +104,7 @@ void drawAppMode(AppInfo *info, State& state)
 	text.setPosition(10, 10);
 	text.setFillColor(sf::Color::Black);
 
-	if (state == State::None)
-	{
-		text.setString(info->pCurrentMode->getModeDescription());
-	}
-	else
-	{
-		text.setString("Command Line");
-	}
+	text.setString(getDescription(info));
 
 	info->window->draw(text);
 }
@@ -260,16 +270,14 @@ void handleSet(AppInfo& app, Command& command)
 		{
 			if (command.paramType == Command::LineWidth)
 			{
-				// FIXME
-				for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
+				for (auto& line : app.selection.lines)
 				{
 					line->width = command.intParam[0];
 				}
 			}
 			else if (command.paramType == Command::LineColor)
 			{
-				// FIXME
-				for (auto& line : reinterpret_cast<EditMode*>(app.modes[1])->selection.lines)
+				for (auto& line : app.selection.lines)
 				{
 					line->color.r = command.intParam[0];
 					line->color.g = command.intParam[1];
@@ -315,16 +323,14 @@ void handleSet(AppInfo& app, Command& command)
 		{
 			if (command.paramType == Command::CircleBorderWidth)
 			{
-				// FIXME
-				for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+				for (auto circle : app.selection.circles)
 				{
 					circle->outlineThickness = command.intParam[0];
 				}
 			}
 			else if (command.paramType == Command::CircleBorderColor)
 			{
-				// FIXME
-				for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+				for (auto circle : app.selection.circles)
 				{
 					circle->outlineColor.r = command.intParam[0];
 					circle->outlineColor.g = command.intParam[1];
@@ -334,8 +340,7 @@ void handleSet(AppInfo& app, Command& command)
 			}
 			else if (command.paramType == Command::CircleFillColor)
 			{
-				// FIXME
-				for (auto circle : reinterpret_cast<EditMode*>(app.modes[1])->selection.circles)
+				for (auto circle : app.selection.circles)
 				{
 					circle->color.r = command.intParam[0];
 					circle->color.g = command.intParam[1];
@@ -362,8 +367,7 @@ void handleSet(AppInfo& app, Command& command)
 		{
 			if (command.paramType == Command::TextSize)
 			{
-				// FIXME
-				for (auto text : reinterpret_cast<EditMode*>(app.modes[1])->selection.texts)
+				for (auto text : app.selection.texts)
 				{
 					text->text.setCharacterSize(command.intParam[0]);
 					text->bounding = text->text.getGlobalBounds();
@@ -377,20 +381,20 @@ void handleSet(AppInfo& app, Command& command)
 	}
 }
 
-void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, State& state)
+void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 {
 	if (e.type == sf::Event::KeyPressed)
 	{
 		if (e.key.code == sf::Keyboard::Enter)
 		{
-			state = State::None;
+			// restore previous state
+			app.state = app.previousState;
 
 			bool success;
 			Command command = parseCommand(commandLine, &success);
+			commandLine = "";
 			if (!success)
 			{
-				state = State::None;
-				commandLine = "";
 				std::cout << "failed to parse command\n";
 				return;
 			}
@@ -402,8 +406,6 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, Sta
 			{
 				handleExport(app, command);
 			}
-
-			commandLine = "";
 		}
 		else if (e.key.code == sf::Keyboard::Backspace)
 		{
@@ -412,7 +414,7 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine, Sta
 				commandLine.pop_back();
 				if (commandLine.size() == 0)
 				{
-					state = State::None;
+					app.state = app.previousState;
 				}
 			}
 		}
@@ -443,15 +445,16 @@ int main()
 
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
 
-	app.modes.push_back(new CreateMode(sf::Keyboard::C, &app));
-	app.modes.push_back(new EditMode(sf::Keyboard::E, &app));
+//	app.modes.push_back(new CreateMode(sf::Keyboard::C, &app));
+//	app.modes.push_back(new EditMode(sf::Keyboard::E, &app));
 
-	app.pCurrentMode = app.modes[0];
-	app.pCurrentMode->onEnter();
+//	app.pCurrentMode = app.modes[0];
+//	app.pCurrentMode->onEnter();
+	app.previousState = State::CLine;
+	onCreateEnter(&app);
 
 	bool middleButtonPressed = false;
 	sf::Vector2f posWhenMiddleButtonPressed;
-	State state = State::None;
 
 	// 0 - create mode, 1 - edit mode
 	int currentModeIndex = 0;
@@ -484,8 +487,11 @@ int main()
 
 			if (e.type == sf::Event::MouseButtonPressed)
 			{
-				state = State::None;
-				commandLine = "";
+				if (app.state == State::CommandLine)
+				{
+					app.state = app.previousState;
+					commandLine = "";
+				}
 
 				if (e.mouseButton.button == sf::Mouse::Button::Middle)
 				{
@@ -493,16 +499,18 @@ int main()
 					posWhenMiddleButtonPressed = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 				}
 
-				if (e.mouseButton.button == sf::Mouse::Button::Left)
+				if (e.mouseButton.button == sf::Mouse::Button::Left 
+						&& getStateType(app.state) != StateType::Create)
 				{
-					if (currentModeIndex != 0)  modeSwitch = true;
-					currentModeIndex = 0;
+					onEditExit(&app);
+					onCreateEnter(&app);
 				}
 
-				if (e.mouseButton.button == sf::Mouse::Button::Right)
+				if (e.mouseButton.button == sf::Mouse::Button::Right
+						&& getStateType(app.state) != StateType::Edit)
 				{
-					if (currentModeIndex != 1)  modeSwitch = true;
-					currentModeIndex = 1;
+					onCreateExit(&app);
+					onEditEnter(&app);
 				}
 			}
 
@@ -562,59 +570,35 @@ int main()
 			{
 				if (e.key.code == sf::Keyboard::SemiColon && e.key.shift)
 				{
-					state = State::CommandLine;
+					app.previousState = app.state;
+					app.state = State::CommandLine;
 					commandLine = "";
 				}
 				else if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
-				{
 					app.shiftPressed = true;
-				}
 				else if (e.key.code == sf::Keyboard::RAlt || e.key.code == sf::Keyboard::LAlt)
-				{
 					app.snapping = false;
-				}
 			}
 			else if (e.type == sf::Event::KeyReleased)
 			{
 				if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
-				{
 					app.shiftPressed = false;
-				}
 				else if (e.key.code == sf::Keyboard::RAlt || e.key.code == sf::Keyboard::LAlt)
-				{
 					app.snapping = true;
-				}
 			}
 
-			if (state == State::None)
+			if (app.state != State::CommandLine)
 			{
 				if (e.type == sf::Event::KeyPressed)
 				{
 					if (e.key.code == sf::Keyboard::C && e.key.control)
 					{
-						if (currentModeIndex != 0)
-						{
-							modeSwitch = true;
-							currentModeIndex = 0;
-						}
-						else
-						{
-							app.modes[0]->onExit();
-							app.modes[0]->onEnter();
-						}
-						e.key.code = sf::Keyboard::L;
+						onCreateEnter(&app);
+						goto EndOfEvent;
 					}
 				}
 
-				if (modeSwitch)
-				{
-					modeSwitch = false;
-					Mode *mi = app.modes[currentModeIndex];
-					mi->onEnter();
-					app.pCurrentMode->onExit();
-					app.pCurrentMode = mi;
-				}
-
+				// handle zoom and movement
 				if (e.type == sf::Event::KeyPressed)
 				{
 					if (e.key.code == sf::Keyboard::Hyphen)
@@ -633,7 +617,6 @@ int main()
 						}
 						goto EndOfEvent;
 					}
-					// TODO change this to something more usable
 					if (e.key.code == sf::Keyboard::Up)
 					{
 						app.camera.move(0, -10);
@@ -651,11 +634,23 @@ int main()
 						app.camera.move(10, 0);
 					}
 				}
-				app.pCurrentMode->onEvent(e);
+
+				if (getStateType(app.state) == StateType::Create)
+				{
+					onCreateEvent(&app, e);
+				}
+				else if (getStateType(app.state) == StateType::Edit)
+				{
+					onEditEvent(&app, e);
+				}
+				else
+				{
+					std::cout << "(3091)Error: Unexpected Type: "  << (unsigned) getStateType(app.state) << std::endl;
+				}
 			}
-			else if (state == State::CommandLine)
+			else if (app.state == State::CommandLine)
 			{
-				handleCommandLine(e, app, commandLine, state);
+				handleCommandLine(e, app, commandLine);
 			}
 		}
 
@@ -669,18 +664,17 @@ EndOfEvent:
 
 		window.setView(app.camera);
 
-		app.pCurrentMode->beforeDraw();
+		if (getStateType(app.state) == StateType::Edit)
+			editBeforeDraw(&app);
 
 		drawLines(app.lines, app.window);
 		drawCircles(app.circles, app.window);
 		drawTexts(app.texts, app.window);
 
-		app.pCurrentMode->afterDraw();
-
 		drawSnappedPoint(&app);
 
 		window.setView(app.defaultView);
-		drawAppMode(&app, state);
+		drawAppMode(&app);
 		drawGridSize(&app);
 		drawCommandLine(&app, commandLine);
 

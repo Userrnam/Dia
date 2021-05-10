@@ -6,28 +6,6 @@
 
 const sf::Color selectionColor = sf::Color(70,70,180,90);
 
-void CopyInfo::move(sf::Vector2f v)
-{
-	for (auto& line : lines)
-	{
-		line.p[0] += v;
-		line.p[1] += v;
-	}
-
-	for (auto& circle : circles)
-	{
-		circle.center += v;
-	}
-
-	for (auto& text : texts)
-	{
-		text.bounding.left += v.x;
-		text.bounding.top += v.y;
-
-		text.text.move(v);
-	}
-}
-
 void copyCopyInfoToSelectionAndAppInfo(Selection *selection, AppInfo *info, CopyInfo *copyInfo)
 {
 	// insure that pointers in selection will be correct
@@ -107,131 +85,6 @@ Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *i
 	return result;
 }
 
-void Selection::move(sf::Vector2f v)
-{
-	for (auto& line : lines)
-	{
-		line->p[0] += v;
-		line->p[1] += v;
-	}
-
-	for (auto& circle : circles)
-	{
-		circle->center += v;
-	}
-
-	for (auto& text : texts)
-	{
-		text->bounding.left += v.x;
-		text->bounding.top += v.y;
-
-		text->text.move(v);
-	}
-}
-
-sf::Vector2f Selection::closestPoint(sf::Vector2f v)
-{
-	sf::Vector2f res = sf::Vector2f(0, 0);
-	float dMin = 1e7;
-
-	for (auto line : lines)
-	{
-		float dist = d2(v, line->p[0]);
-		if (dist < dMin)
-		{
-			dMin = dist;
-			res = line->p[0];
-		}
-		dist = d2(v, line->p[1]);
-		if (dist < dMin)
-		{
-			dMin = dist;
-			res = line->p[1];
-		}
-	}
-
-	for (auto circle : circles)
-	{
-		float dist = d2(v, circle->center);
-		if (dist < dMin)
-		{
-			dMin = dist;
-			res = circle->center;
-		}
-	}
-
-	for (auto text : texts)
-	{
-		auto point = sf::Vector2f(text->bounding.left, text->bounding.top);
-		float dist = d2(v, point);
-		if (dist < dMin)
-		{
-			dMin = dist;
-			res = point;
-		}
-	}
-
-	return res;
-}
-
-void Selection::add(Line *line)
-{
-	for (auto l : lines)
-	{
-		if (l == line)   return;
-	}
-
-	lines.push_back(line);
-}
-
-void Selection::add(Circle *circle)
-{
-	for (auto c : circles)
-	{
-		if (c == circle)   return;
-	}
-
-	circles.push_back(circle);
-}
-
-void Selection::add(Text *text)
-{
-	for (auto t : texts)
-	{
-		if (t == text)   return;
-	}
-
-	texts.push_back(text);
-}
-
-bool Selection::contains(Line *line)
-{
-	for (auto l : lines)
-	{
-		if (l == line)  return true;;
-	}
-	return false;
-}
-
-bool Selection::contains(Circle *circle)
-{
-	for (auto c : circles)
-	{
-		if (c == circle)  return true;
-	}
-	return false;
-}
-
-bool Selection::contains(Text *text)
-{
-	for (auto t : texts)
-	{
-		if (t == text)  return true;;
-	}
-
-	return false;
-}
-
 void removeSelection(Selection *pSelection, AppInfo *info)
 {
 	std::sort(pSelection->lines.begin(), pSelection->lines.end());
@@ -264,318 +117,283 @@ void removeSelection(Selection *pSelection, AppInfo *info)
 	pSelection->clear();
 }
 
-void EditMode::onEvent(sf::Event& e)
+static void handleMouseMoveEvent(AppInfo *info, sf::Event& e)
+{
+	sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
+	auto vec = snap(info, mousePos);
+
+	if (info->state == State::EMovingPoint)
+	{
+		*info->pVec = vec;
+	}
+	else if (info->state == State::EChangingCircleRadius)
+	{
+		info->pCircle->radius = sqrt(d2(vec, info->pCircle->center));
+	}
+	else if (info->state == State::EMovingText)
+	{
+		info->pText->text.setPosition(vec);
+		info->pText->bounding = info->pText->text.getGlobalBounds();
+	}
+	else if (info->state == State::EMovingLine)
+	{
+		auto move = vec - *info->pVec;
+		info->pLine->p[0] += move;
+		info->pLine->p[1] += move;
+	}
+	else if (info->state == State::ESelectElement)
+	{
+		info->state = info->possibleNextState;
+	}
+	else if (info->state == State::ESelectionRectangle)
+	{
+		info->selectionRectangle.width  = mousePos.x - info->selectionRectangle.left;
+		info->selectionRectangle.height = mousePos.y - info->selectionRectangle.top;
+	}
+	else if (info->state == State::EMovingSelection)
+	{
+		auto mov = vec - info->movingSelectionReferencePoint;
+		info->movingSelectionReferencePoint = vec;
+		info->selection.move(mov);
+	}
+	else if (info->state == State::EMovingCopy)
+	{
+		auto mov = vec - info->referencePoint;			
+		info->referencePoint = vec;
+		info->copyInfo.move(mov);
+	}
+}
+
+static void handleButtonPressed(AppInfo *info, sf::Event& e)
+{
+	// TODO When is it true?
+	if (info->state == State::ESelectEnd)
+		info->state = State::EPoint;
+
+	sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
+	if (info->state == State::EPoint || info->shiftPressed && info->state == State::EMovingSelection)
+	{
+		// check texts
+		for (auto& t : info->texts)
+		{
+			if (t.bounding.contains(pos))
+			{
+				if (info->selection.contains(&t))
+				{
+					info->state = State::EMovingSelection;
+					info->movingSelectionReferencePoint = sf::Vector2f(t.bounding.left, t.bounding.top);
+				}
+				else
+				{
+					if (!info->shiftPressed)  info->selection.clear();
+					info->selection.add(&t);
+					info->state = State::ESelectElement;
+					info->possibleNextState = State::EMovingText;
+					info->pText = &t;
+				}
+				return;
+			}
+		}
+		
+		Line *ll;
+		float dist2;
+		sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2, &ll);
+		if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+		{
+			if (info->selection.contains(ll) && info->selection.size() > 1)
+			{
+				info->state = State::EMovingSelection;
+				info->movingSelectionReferencePoint = *p;
+				return;
+			}
+
+			// if user clicks on point, it cannot be a selection
+			info->state = State::EMovingPoint;
+			info->pVec = p;
+			return;
+		}
+
+		float dist3;
+		Circle *p2 = getClosestCircle(info, pos, &dist3);
+		if (dist3 < dist2 && dist3 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+		{
+			if (info->selection.contains(p2) && info->selection.size() > 1)
+			{
+				info->state = State::EMovingSelection;
+				info->movingSelectionReferencePoint = p2->center;
+				return;
+			}
+
+			if (!info->shiftPressed)  info->selection.clear();
+			info->selection.add(p2);
+			info->state = State::ESelectElement;
+			info->possibleNextState = State::EMovingPoint;
+			info->pVec = &p2->center;
+
+			if (info->shiftPressed)
+			{
+				info->possibleNextState = State::EChangingCircleRadius;
+				info->pCircle = p2;
+			}
+			return;
+		}
+
+		// check line
+		Line *pL = getClosestLine(info, pos, &dist2);
+		if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
+		{
+			float dl1 = d2(pos, pL->p[0]);
+			float dl2 = d2(pos, pL->p[1]);
+
+			if (dl1 < dl2)
+			{
+				info->pVec = &pL->p[0];
+			}
+			else
+			{
+				info->pVec = &pL->p[1];
+			}
+
+			if (info->selection.contains(pL))
+			{
+				info->state = State::EMovingSelection;
+				info->movingSelectionReferencePoint = *info->pVec;
+				return;
+			}
+
+			if (!info->shiftPressed)  info->selection.clear();
+			info->selection.add(pL);
+			info->state = State::ESelectElement;
+			info->possibleNextState = State::EMovingLine;
+			info->pLine = pL;
+
+			return;
+		}
+
+		info->selection.clear();
+
+		info->state = State::ESelectionRectangle;
+		info->selectionRectangle.left = pos.x;
+		info->selectionRectangle.top = pos.y;
+	}
+	else if (info->state == State::EMovingCopy)
+	{
+		info->selection.clear();
+		copyCopyInfoToSelectionAndAppInfo(&info->selection, info, &info->copyInfo);
+		info->copyInfo.clear();
+		info->state = State::EPoint;
+	}
+}
+
+static void handleButtonRelease(AppInfo *info, sf::Event& e)
+{
+	if (info->state == State::EMovingPoint)
+	{
+		info->state = State::EPoint;
+		info->pVec = nullptr;
+		// FIXME: 2 points of the same line may be the same.
+		// If this happens, the line should be deleted
+	}
+	else if (info->state == State::EChangingCircleRadius)
+	{
+		info->state = State::EPoint;
+		info->pCircle = nullptr;
+	}
+	else if (info->state == State::EMovingText)
+	{
+		info->state = State::EPoint;
+		info->pText = nullptr;
+	}
+	else if (info->state == State::EMovingLine)
+	{
+		info->state = State::EPoint;
+		info->pLine = nullptr;
+	}
+	else if (info->state == State::ESelectElement)
+	{
+		info->state = State::ESelectEnd;
+	}
+	else if (info->state == State::ESelectionRectangle)
+	{
+		info->selection = getSelectionFromRectangle(info->selectionRectangle, info);
+		info->state = State::EPoint;
+		info->selectionRectangle = {};
+	}
+	else if (info->state == State::EMovingSelection)
+	{
+		info->state = State::EPoint;
+	}
+}
+
+static void handleKeyPress(AppInfo *info, sf::Event& e)
+{
+	if (e.key.code == sf::Keyboard::D)
+	{
+		removeSelection(&info->selection, info);
+	}
+	else if (e.key.code == sf::Keyboard::Y)
+	{
+		info->referencePoint = info->selection.closestPoint(info->snappedPos);
+		info->copyInfo.clear();
+		copySelectionToCopyInfo(&info->copyInfo, &info->selection);
+		info->state = State::EMovingCopy;
+	}
+}
+
+void onEditEvent(AppInfo *info, sf::Event& e)
 {
 	switch (e.type)
 	{
 		case sf::Event::MouseMoved:
-		{
-			sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
-			auto vec = snap(info, mousePos);
-
-			if (state == MovingPoint)
-			{
-				*pVec = vec;
-			}
-			else if (state == ChangingCircleRadius)
-			{
-				pCircle->radius = sqrt(d2(vec, pCircle->center));
-			}
-			else if (state == MovingText)
-			{
-				pText->text.setPosition(vec);
-				pText->bounding = pText->text.getGlobalBounds();
-			}
-			else if (state == MovingLine)
-			{
-				auto move = vec - *pVec;
-				pLine->p[0] += move;
-				pLine->p[1] += move;
-			}
-			else if (state == SelectElement)
-			{
-				state = possibleNextState;
-			}
-			else if (state == SelectionRectangle)
-			{
-				selectionRectangle.width  = mousePos.x - selectionRectangle.left;
-				selectionRectangle.height = mousePos.y - selectionRectangle.top;
-			}
-			else if (state == MovingSelection)
-			{
-				auto mov = vec - movingSelectionReferencePoint;
-				movingSelectionReferencePoint = vec;
-				selection.move(mov);
-			}
-			else if (state == MovingCopy)
-			{
-				auto mov = vec - referencePoint;			
-				referencePoint = vec;
-				copyInfo.move(mov);
-			}
-
+			handleMouseMoveEvent(info, e);
 			break;
-		}
 
 		case sf::Event::MouseButtonPressed:
-		{
-			if (e.mouseButton.button != sf::Mouse::Button::Right)
-			{
-				return;
-			}
-		
-			if (state == SelectEnd)
-			{
-				state = Point;
-			}
-
-			sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
-			if (state == Point || info->shiftPressed && state == MovingSelection)
-			{
-				// check texts
-				for (auto& t : info->texts)
-				{
-					if (t.bounding.contains(pos))
-					{
-						if (selection.contains(&t))
-						{
-							state = MovingSelection;
-							movingSelectionReferencePoint = sf::Vector2f(t.bounding.left, t.bounding.top);
-						}
-						else
-						{
-							if (!info->shiftPressed)  selection.clear();
-							selection.add(&t);
-							state = SelectElement;
-							possibleNextState = MovingText;
-							pText = &t;
-						}
-						return;
-					}
-				}
-				
-				Line *ll;
-				float dist2;
-				sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2, &ll);
-				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
-				{
-					if (selection.contains(ll) && selection.size() > 1)
-					{
-						state = MovingSelection;
-						movingSelectionReferencePoint = *p;
-						return;
-					}
-
-					// if user clicks on point, it cannot be a selection
-					state = MovingPoint;
-					pVec = p;
-					return;
-				}
-
-				float dist3;
-				Circle *p2 = getClosestCircle(info, pos, &dist3);
-				if (dist3 < dist2 && dist3 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
-				{
-					if (selection.contains(p2) && selection.size() > 1)
-					{
-						state = MovingSelection;
-						movingSelectionReferencePoint = p2->center;
-						return;
-					}
-
-					if (!info->shiftPressed)  selection.clear();
-					selection.add(p2);
-					state = SelectElement;
-					possibleNextState = MovingPoint;
-					pVec = &p2->center;
-
-					if (info->shiftPressed)
-					{
-						possibleNextState = ChangingCircleRadius;
-						pCircle = p2;
-					}
-					return;
-				}
-
-				// check line
-				Line *pL = getClosestLine(info, pos, &dist2);
-				if (dist2 < MAX_SELECT_DISTANCE * MAX_SELECT_DISTANCE)
-				{
-					float dl1 = d2(pos, pL->p[0]);
-					float dl2 = d2(pos, pL->p[1]);
-
-					if (dl1 < dl2)
-					{
-						pVec = &pL->p[0];
-					}
-					else
-					{
-						pVec = &pL->p[1];
-					}
-
-					if (selection.contains(pL))
-					{
-						state = MovingSelection;
-						movingSelectionReferencePoint = *pVec;
-						return;
-					}
-
-					if (!info->shiftPressed)  selection.clear();
-					selection.add(pL);
-					state = SelectElement;
-					possibleNextState = MovingLine;
-					pLine = pL;
-
-					return;
-				}
-
-				selection.clear();
-
-				state = SelectionRectangle;
-				selectionRectangle.left = pos.x;
-				selectionRectangle.top = pos.y;
-			}
-			else if (state == MovingCopy)
-			{
-				selection.clear();
-				copyCopyInfoToSelectionAndAppInfo(&selection, info, &copyInfo);
-				copyInfo.clear();
-				state = Point;
-			}
-
+			handleButtonPressed(info, e);
 			break;
-		}
 
 		case sf::Event::MouseButtonReleased:
-		{
-			if (e.mouseButton.button != sf::Mouse::Button::Right)
-			{
-				return;
-			}
-
-			if (state == MovingPoint)
-			{
-				state = Point;
-				pVec = nullptr;
-				// FIXME: 2 points of the same line may be the same.
-				// If this happens, the line should be deleted
-			}
-			else if (state == ChangingCircleRadius)
-			{
-				state = Point;
-				pCircle = nullptr;
-			}
-			else if (state == MovingText)
-			{
-				state = Point;
-				pText = nullptr;
-			}
-			else if (state == MovingLine)
-			{
-				state = Point;
-				pLine = nullptr;
-			}
-			else if (state == SelectElement)
-			{
-				state = SelectEnd;
-			}
-			else if (state == SelectionRectangle)
-			{
-				selection = getSelectionFromRectangle(selectionRectangle, info);
-				state = Point;
-				selectionRectangle = {};
-			}
-			else if (state == MovingSelection)
-			{
-				state = Point;
-			}
-
+			handleButtonRelease(info, e);
 			break;
-		}
+
 		case sf::Event::KeyPressed:
-		{
-			if (e.key.code == sf::Keyboard::D)
-			{
-				removeSelection(&selection, info);
-			}
-			else if (e.key.code == sf::Keyboard::Y)
-			{
-				referencePoint = selection.closestPoint(info->snappedPos);
-				copyInfo.clear();
-				copySelectionToCopyInfo(&copyInfo, &selection);
-				state = MovingCopy;
-			}
-
+			handleKeyPress(info, e);
 			break;
-		}
 
 		default: {}
 	}
 }
 
-void EditMode::onEnter()
+void onEditEnter(AppInfo *info)
 {
-	state = Point;
-	selection.clear();
+	info->state = State::EPoint;
+	info->selection.clear();
 }
 
-void EditMode::onExit()
+void onEditExit(AppInfo *info)
 {
-	if (copyInfo.size())
+	if (info->copyInfo.size())
 	{
-		selection.clear();
-		copyCopyInfoToSelectionAndAppInfo(&selection, info, &copyInfo);
-		copyInfo.clear();
+		info->selection.clear();
+		copyCopyInfoToSelectionAndAppInfo(&info->selection, info, &info->copyInfo);
+		info->copyInfo.clear();
 	}
 
-	state = Point;
-	selection.clear();
+	info->state = State::EPoint;
+	info->selection.clear();
 }
-
-std::string EditMode::getModeDescription()
-{
-	if (state == Point || state == MovingPoint)
-		return "Edit Point";
-
-	if (state == ChangingCircleRadius)
-		return "Change Circle Raidus";
-
-	if (state == MovingText)
-		return "Moving Text";
-
-	if (state == MovingLine)
-		return "Moving Line";
-
-	if (state == SelectElement)
-		return "Select Element";
-
-	if (state == SelectEnd)
-		return "Select End";
-
-	if (state == SelectionRectangle)
-		return "Selection Rectangle";
-
-	if (state == MovingSelection)
-		return "Moving Selection";
-
-	if (state == MovingCopy)
-		return "Moving Copy";
-
-	return "Error";
-}
-
 
 void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow *window);
 void drawLinesSelection(const std::vector<Line*>& lines, sf::RenderWindow *window);
 void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow *window, bool drawBack=true);
 
-void EditMode::beforeDraw()
+void editBeforeDraw(AppInfo *info)
 {
-	if (state == SelectionRectangle)
+	if (info->state == State::ESelectionRectangle)
 	{
 		sf::RectangleShape shape;
-		shape.setPosition(selectionRectangle.left, selectionRectangle.top);
-		shape.setSize(sf::Vector2f(selectionRectangle.width, selectionRectangle.height));
+		shape.setPosition(info->selectionRectangle.left, info->selectionRectangle.top);
+		shape.setSize(sf::Vector2f(info->selectionRectangle.width, info->selectionRectangle.height));
 		shape.setFillColor(selectionColor);
 
 		info->window->draw(shape);
@@ -583,15 +401,15 @@ void EditMode::beforeDraw()
 	else
 	{
 		// draw selection
-		drawLinesSelection(selection.lines, info->window);
-		drawCirclesSelection(selection.circles, info->window);
-		drawTextsSelection(selection.texts, info->window);
+		drawLinesSelection(info->selection.lines, info->window);
+		drawCirclesSelection(info->selection.circles, info->window);
+		drawTextsSelection(info->selection.texts, info->window);
 	}
 
 	// draw copyInfo
-	drawLines(copyInfo.lines, info->window);
-	drawCircles(copyInfo.circles, info->window);
-	drawTexts(copyInfo.texts, info->window);
+	drawLines(info->copyInfo.lines, info->window);
+	drawCircles(info->copyInfo.circles, info->window);
+	drawTexts(info->copyInfo.texts, info->window);
 }
 
 void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow *window)
