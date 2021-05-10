@@ -53,7 +53,6 @@ bool parseColor(std::stringstream& ss, Command& command)
 
 static bool handleSet(Command& command, std::stringstream& ss)
 {
-
 	std::string cmd;
 	ss >> cmd;
 
@@ -79,17 +78,20 @@ static bool handleSet(Command& command, std::stringstream& ss)
 	else if (cmd.find("circle") != std::string::npos)
 	{
 		command.target = Command::Circle;
-		if (cmd.find("borderWidth") != std::string::npos)
+		if (cmd.find("borderWidth") != std::string::npos ||
+				cmd.find("border") != std::string::npos && cmd.find("width") != std::string::npos)
 		{
 			command.paramType = Command::CircleBorderWidth;
 			if (!parseInt(ss, command))   return false;
 		}
-		else if (cmd.find("fillColor") != std::string::npos)
+		else if (cmd.find("fillColor") != std::string::npos ||
+				cmd.find("fill") != std::string::npos && cmd.find("color") != std::string::npos)
 		{
 			command.paramType = Command::CircleFillColor;
 			if (!parseColor(ss, command))   return false;
 		}
-		else if (cmd.find("borderColor") != std::string::npos)
+		else if (cmd.find("borderColor") != std::string::npos ||
+				cmd.find("border") != std::string::npos && cmd.find("color") != std::string::npos)
 		{
 			command.paramType = Command::CircleBorderColor;
 			if (!parseColor(ss, command))   return false;

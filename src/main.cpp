@@ -138,16 +138,32 @@ void drawGridSize(AppInfo *info)
 
 void drawCommandLine(AppInfo *info, const std::string& commandLine)
 {
-	sf::Text text;
-	text.setFont(info->font);
-	text.setCharacterSize(info->characterSize);
-	text.setFillColor(sf::Color::Black);
+	if (commandLine.size())
+	{
+		sf::Text text;
+		text.setFont(info->font);
+		text.setCharacterSize(info->characterSize);
+		text.setFillColor(sf::Color::Black);
 
-	text.setString(commandLine);
+		text.setString(commandLine);
 
-	text.setPosition(10, info->windowSize.y - text.getGlobalBounds().top - 50);
+		text.setPosition(10, info->windowSize.y - text.getGlobalBounds().top - 50);
 
-	info->window->draw(text);
+		info->window->draw(text);
+	}
+	else if (info->error.size())
+	{
+		sf::Text text;
+		text.setFont(info->font);
+		text.setCharacterSize(info->characterSize);
+		text.setFillColor(sf::Color::Red);
+
+		text.setString(info->error);
+
+		text.setPosition(10, info->windowSize.y - text.getGlobalBounds().top - 50);
+
+		info->window->draw(text);
+	}
 }
 
 const auto defaultWindowSize = sf::Vector2i(800, 600);
@@ -241,7 +257,10 @@ void handleExport(AppInfo& app, Command& commad)
 	auto filename = commad.stringParam[0];
 
 	renderTexture.display();
-	renderTexture.getTexture().copyToImage().saveToFile(filename);
+	if (!renderTexture.getTexture().copyToImage().saveToFile(filename))
+	{
+		app.error = "Export Failed";
+	}
 }
 
 void handleSet(AppInfo& app, Command& command)
@@ -379,7 +398,7 @@ void handleSet(AppInfo& app, Command& command)
 	}
 	else
 	{
-		std::cout << "Error\n";
+		app.error = "(3290) Internal Error";
 	}
 }
 
@@ -389,6 +408,7 @@ void handleLoad(AppInfo& app, Command& command)
 	AppInfo info = loadProject(command.stringParam[0], &success, &app.font);
 	if (!success)
 	{
+		app.error = "Failed To Load " + command.stringParam[0];
 		return;
 	}
 	
@@ -399,7 +419,10 @@ void handleLoad(AppInfo& app, Command& command)
 
 void handleSave(AppInfo& app, Command& command)
 {
-	saveProject(&app, command.stringParam[0]);
+	if (!saveProject(&app, command.stringParam[0]))
+	{
+		app.error = "Failed To Save Prject";
+	}
 }
 
 void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
@@ -416,7 +439,7 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 			commandLine = "";
 			if (!success)
 			{
-				std::cout << "failed to parse command\n";
+				app.error = "Failed To Parse Command";
 				return;
 			}
 			if (command.type == Command::Set)
@@ -594,6 +617,7 @@ int main()
 					app.previousState = app.state;
 					app.state = State::CommandLine;
 					commandLine = "";
+					app.error = "";
 				}
 				else if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
 					app.shiftPressed = true;

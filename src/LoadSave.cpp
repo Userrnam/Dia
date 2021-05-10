@@ -109,10 +109,12 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 	return info;
 }
 
-void saveProject(AppInfo *info, const std::string& path)
+bool saveProject(AppInfo *info, const std::string& path)
 {
 	std::fstream f;
 	f.open(path, std::ios::out|std::ios::binary);
+
+	if (f.fail())   return false;
 
 	uint32_t size = info->lines.size();
 	f.write((char*)&size, sizeof(uint32_t));
@@ -147,6 +149,10 @@ void saveProject(AppInfo *info, const std::string& path)
 		f.write((char*)&size, sizeof(uint32_t));
 	}
 
+	if (f.fail())   return false;
+
 	f.close();
+
+	return true;
 }
 

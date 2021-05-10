@@ -76,6 +76,8 @@ struct AppInfo
 	State state = State::CLine;
 	State previousState = State::None;
 
+	std::string error;
+
 	// copy paste from EditMode
 	// TODO clean up
 	sf::Vector2f *pVec = 0;

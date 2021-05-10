@@ -33,18 +33,16 @@ inline sf::Vector2f normalize(sf::Vector2f v)
 
 inline sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
 {
+	sf::Vector2f p;
+
 	if (!info->snapping)   return pos;
 
-	sf::Vector2f p;
-	pos /= info->cameraZoom;
-
-	float size = info->gridSize / info->cameraZoom;
+	float size = info->gridSize;
 	if (pos.x > 0)  p.x = ((int)(pos.x + size/2) / (int)size) * size;
 	else            p.x = ((int)(pos.x - size/2) / (int)size) * size;
 	if (pos.y > 0)	p.y = ((int)(pos.y + size/2) / (int)size) * size;
 	else	        p.y = ((int)(pos.y - size/2) / (int)size) * size;
 
-	p *= info->cameraZoom;
 	return p;
 }
 
