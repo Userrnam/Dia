@@ -5,6 +5,7 @@
 
 struct Line
 {
+	uint64_t id;
 	sf::Vector2f p[2];
 	sf::Color color = sf::Color::Black;
 	float width = 4;
@@ -19,6 +20,7 @@ struct Line
 // may be we can use just sf::CircleShape?
 struct Circle
 {
+	uint64_t id;
 	sf::Vector2f center;
 	float radius;
 	sf::Color outlineColor = sf::Color::Black;
@@ -28,6 +30,7 @@ struct Circle
 
 struct Text
 {
+	uint64_t id;
 	sf::Text text;
 	sf::FloatRect bounding;
 };

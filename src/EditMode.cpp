@@ -31,6 +31,33 @@ void copyCopyInfoToSelectionAndAppInfo(Selection *selection, AppInfo *info, Copy
 	}
 }
 
+void addTimeFrameFromSelection(AppInfo *info, ChangeType t)
+{
+	Change change;
+	std::vector<Change> changes;
+
+	change.elementType = ElementType::Line;	
+	for (auto element : info->selection.lines)
+	{
+		change.setPreviousValue(*element);
+		changes.push_back(change);
+	}
+	change.elementType = ElementType::Circle;	
+	for (auto element : info->selection.circles)
+	{
+		change.setPreviousValue(*element);
+		changes.push_back(change);
+	}
+	change.elementType = ElementType::Text;	
+	for (auto element : info->selection.texts)
+	{
+		change.setPreviousValue(*element);
+		changes.push_back(change);
+	}
+
+	info->history.addChanges(changes, t);
+}
+
 void copySelectionToCopyInfo(CopyInfo *copyInfo, Selection *selection)
 {
 	for (auto line : selection->lines)
@@ -49,15 +76,13 @@ void copySelectionToCopyInfo(CopyInfo *copyInfo, Selection *selection)
 	}
 }
 
-Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *info)
+void getSelectionFromRectangle(sf::FloatRect selectionRectangle, Selection *selection, AppInfo *info)
 {
-	Selection result;
-
 	for (auto& line : info->lines)
 	{
 		if (selectionRectangle.contains(line.p[0]) && selectionRectangle.contains(line.p[1]))
 		{
-			result.lines.push_back(&line);
+			selection->add(&line);
 		}
 	}
 
@@ -67,7 +92,7 @@ Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *i
 			selectionRectangle.contains(sf::Vector2f(circle.center.x-circle.radius, circle.center.y-circle.radius)) 
 			)
 		{
-			result.circles.push_back(&circle);
+			selection->add(&circle);
 		}
 	}
 
@@ -78,28 +103,40 @@ Selection getSelectionFromRectangle(sf::FloatRect selectionRectangle, AppInfo *i
 			selectionRectangle.contains(sf::Vector2f(bounds.left+bounds.width, bounds.top+bounds.height))
 			)
 		{
-			result.texts.push_back(&text);
+			selection->add(&text);
 		}
 	}
-
-	return result;
 }
 
 void removeSelection(Selection *pSelection, AppInfo *info)
 {
+	if (pSelection->size() == 0)  return;
+
+	Change change;
+	std::vector<Change> changes;
+
 	std::sort(pSelection->lines.begin(), pSelection->lines.end());
 	int i = 0;
+	change.elementType = ElementType::Line;
 	for (auto line : pSelection->lines)
 	{
 		int index = line - info->lines.data() - i;
+
+		change.setPreviousValue(info->lines[index]);
+		changes.push_back(change);
+		
 		info->lines.erase(info->lines.begin() + index);
 		i++;
 	}
 
 	std::sort(pSelection->circles.begin(), pSelection->circles.end());
 	i = 0;
+	change.elementType = ElementType::Circle;
 	for (auto circle : pSelection->circles)
 	{
+		change.setPreviousValue(*circle);
+		changes.push_back(change);
+		
 		int index = circle - info->circles.data() - i;
 		info->circles.erase(info->circles.begin() + index);
 		i++;
@@ -107,12 +144,18 @@ void removeSelection(Selection *pSelection, AppInfo *info)
 
 	std::sort(pSelection->texts.begin(), pSelection->texts.end());
 	i = 0;
+	change.elementType = ElementType::Text;
 	for (auto text : pSelection->texts)
 	{
+		change.setPreviousValue(*text);
+		changes.push_back(change);
+		
 		int index = text - info->texts.data() - i;
 		info->texts.erase(info->texts.begin() + index);
 		i++;
 	}
+
+	info->history.addChanges(changes, ChangeType::Delete);
 
 	pSelection->clear();
 }
@@ -122,7 +165,7 @@ static void handleMouseMoveEvent(AppInfo *info, sf::Event& e)
 	sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
 	auto vec = snap(info, mousePos);
 
-	if (info->state == State::EMovingPoint)
+	if (info->state == State::EMovingLinePoint || info->state == State::EMovingCirclePoint)
 	{
 		*info->pVec = vec;
 	}
@@ -175,7 +218,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 
 	sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 	if (info->state == State::EPoint || info->shiftPressed && info->state == State::EMovingSelection
-			|| info->state == State::EEditText)
+			|| info->state == State::EEditText || info->state == State::ESelectionRectangle)
 	{
 		if (info->state == State::EEditText)
 		{
@@ -183,6 +226,14 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 			{
 				removeSelection(&info->selection, info);
 				info->selection.clear();
+			}
+			else
+			{
+				Change change;
+				change.elementType = ElementType::Text;
+				change.setPreviousValue(*info->selection.texts.back());
+
+				info->history.addChanges({change}, ChangeType::Edit);
 			}
 		}
 
@@ -224,7 +275,8 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				}
 
 				// if user clicks on point, it cannot be a selection
-				info->state = State::EMovingPoint;
+				info->state = State::EMovingLinePoint;
+				info->pLine = line;
 				info->pVec = p;
 				return;
 			}
@@ -247,13 +299,13 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				if (!info->shiftPressed)  info->selection.clear();
 				info->selection.add(circle);
 				info->state = State::ESelectElement;
-				info->possibleNextState = State::EMovingPoint;
+				info->possibleNextState = State::EMovingCirclePoint;
+				info->pCircle = circle;
 				info->pVec = &circle->center;
 
 				if (info->shiftPressed)
 				{
 					info->possibleNextState = State::EChangingCircleRadius;
-					info->pCircle = circle;
 				}
 				return;
 			}
@@ -310,6 +362,9 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 	{
 		info->selection.clear();
 		copyCopyInfoToSelectionAndAppInfo(&info->selection, info, &info->copyInfo);
+
+		addTimeFrameFromSelection(info, ChangeType::Create);
+
 		info->copyInfo.clear();
 		info->state = State::EPoint;
 	}
@@ -317,8 +372,24 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 
 static void handleButtonRelease(AppInfo *info, sf::Event& e)
 {
-	if (info->state == State::EMovingPoint)
+	Change change;
+
+	if (info->state == State::EMovingLinePoint || info->state == State::EMovingCirclePoint)
 	{
+		if (info->state == State::EMovingLinePoint)
+		{
+			change.elementType = ElementType::Line;
+			change.setPreviousValue(*info->pLine);
+		}
+		else if (info->state == State::EMovingCirclePoint)
+		{
+			change.elementType = ElementType::Circle;
+			change.setPreviousValue(*info->pCircle);
+		}
+
+		info->history.addChanges({change}, ChangeType::Edit);
+
+		// We could move here to CreateMode
 		info->state = State::EPoint;
 		info->pVec = nullptr;
 		// FIXME: 2 points of the same line may be the same.
@@ -326,16 +397,28 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	}
 	else if (info->state == State::EChangingCircleRadius)
 	{
+		change.elementType = ElementType::Circle;
+		change.setPreviousValue(*info->pCircle);
+		info->history.addChanges({change}, ChangeType::Edit);
+
 		info->state = State::EPoint;
 		info->pCircle = nullptr;
 	}
 	else if (info->state == State::EMovingText)
 	{
+		change.elementType = ElementType::Text;
+		change.setPreviousValue(*info->pText);
+		info->history.addChanges({change}, ChangeType::Edit);
+
 		info->state = State::EPoint;
 		info->pText = nullptr;
 	}
 	else if (info->state == State::EMovingLine)
 	{
+		change.elementType = ElementType::Line;
+		change.setPreviousValue(*info->pLine);
+		info->history.addChanges({change}, ChangeType::Edit);
+
 		info->state = State::EPoint;
 		info->pLine = nullptr;
 	}
@@ -345,12 +428,14 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	}
 	else if (info->state == State::ESelectionRectangle)
 	{
-		info->selection = getSelectionFromRectangle(info->selectionRectangle, info);
+		getSelectionFromRectangle(info->selectionRectangle, &info->selection, info);
 		info->state = State::EPoint;
 		info->selectionRectangle = {};
 	}
 	else if (info->state == State::EMovingSelection)
 	{
+		addTimeFrameFromSelection(info, ChangeType::Edit);
+
 		info->state = State::EPoint;
 	}
 	else if (info->state == State::EEditText)
@@ -442,10 +527,87 @@ void onEditEnter(AppInfo *info)
 
 void onEditExit(AppInfo *info)
 {
+	// copy paste from handleButtonRelease
+	Change change;
+
+	if (info->state == State::EMovingLinePoint || info->state == State::EMovingCirclePoint)
+	{
+		if (info->state == State::EMovingLinePoint)
+		{
+			change.elementType = ElementType::Line;
+			change.setPreviousValue(*info->pLine);
+		}
+		else if (info->state == State::EMovingCirclePoint)
+		{
+			change.elementType = ElementType::Circle;
+			change.setPreviousValue(*info->pCircle);
+		}
+
+		info->history.addChanges({change}, ChangeType::Edit);
+
+		// We could move here to CreateMode
+		info->state = State::EPoint;
+		info->pVec = nullptr;
+		// FIXME: 2 points of the same line may be the same.
+		// If this happens, the line should be deleted
+	}
+	else if (info->state == State::EChangingCircleRadius)
+	{
+		change.elementType = ElementType::Circle;
+		change.setPreviousValue(*info->pCircle);
+		info->history.addChanges({change}, ChangeType::Edit);
+
+		info->state = State::EPoint;
+		info->pCircle = nullptr;
+	}
+	else if (info->state == State::EMovingText)
+	{
+		change.elementType = ElementType::Text;
+		change.setPreviousValue(*info->pText);
+		info->history.addChanges({change}, ChangeType::Edit);
+
+		info->state = State::EPoint;
+		info->pText = nullptr;
+	}
+	else if (info->state == State::EMovingLine)
+	{
+		change.elementType = ElementType::Line;
+		change.setPreviousValue(*info->pLine);
+		info->history.addChanges({change}, ChangeType::Edit);
+
+		info->state = State::EPoint;
+		info->pLine = nullptr;
+	}
+	else if (info->state == State::EMovingSelection)
+	{
+		addTimeFrameFromSelection(info, ChangeType::Edit);
+
+		info->state = State::EPoint;
+	}
+	
+	// copy from handleButtonPressed
+	else if (info->state == State::EEditText)
+	{
+		if (info->selection.texts.back()->text.getString().getSize() == 0)
+		{
+			removeSelection(&info->selection, info);
+			info->selection.clear();
+		}
+		else
+		{
+			Change change;
+			change.elementType = ElementType::Text;
+			change.setPreviousValue(*info->selection.texts.back());
+
+			info->history.addChanges({change}, ChangeType::Edit);
+		}
+	}
+	
 	if (info->copyInfo.size())
 	{
 		info->selection.clear();
 		copyCopyInfoToSelectionAndAppInfo(&info->selection, info, &info->copyInfo);
+		addTimeFrameFromSelection(info, ChangeType::Create);
 		info->copyInfo.clear();
 	}
 
@@ -468,13 +630,11 @@ void editBeforeDraw(AppInfo *info)
 
 		info->window->draw(shape);
 	}
-	else
-	{
-		// draw selection
-		drawLinesSelection(info->selection.lines, info->window);
-		drawCirclesSelection(info->selection.circles, info->window);
-		drawTextsSelection(info->selection.texts, info->window);
-	}
+
+	// draw selection
+	drawLinesSelection(info->selection.lines, info->window);
+	drawCirclesSelection(info->selection.circles, info->window);
+	drawTextsSelection(info->selection.texts, info->window);
 
 	// draw copyInfo
 	drawLines(info->copyInfo.lines, info->window);

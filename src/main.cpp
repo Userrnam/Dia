@@ -84,7 +84,9 @@ std::string getDescription(AppInfo *info)
 		case State::CLine:   case State::CNewLine:     return "Create Line";
 		case State::CCircle: case State::CNewCircle:   return "Create Circle";
 		case State::CText:   case State::CNewText:     return "Create Text";
-		case State::EPoint:  case State::EMovingPoint: return "Edit Point";
+		case State::EPoint:                 return "Edit Point";
+		case State::EMovingLinePoint:       return "Edit Line Point";
+		case State::EMovingCirclePoint:     return "Edit Circle Point";
 		case State::EChangingCircleRadius:  return "Change Circle Radius";
 		case State::EMovingText:            return "Moving Text";
 		case State::EMovingLine:            return "Moving Line";
@@ -166,7 +168,7 @@ void drawCommandLine(AppInfo *info, const std::string& commandLine)
 	}
 }
 
-const auto defaultWindowSize = sf::Vector2i(800, 600);
+const auto defaultWindowSize = sf::Vector2i(1600, 1200);
 
 void handleExport(AppInfo& app, Command& commad)
 {
@@ -415,6 +417,7 @@ void handleLoad(AppInfo& app, Command& command)
 	app.lines = info.lines;
 	app.circles = info.circles;
 	app.texts = info.texts;
+	app.elementId = app.lines.size() + app.circles.size() + app.texts.size();
 }
 
 void handleSave(AppInfo& app, Command& command)
@@ -474,6 +477,197 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 		{
 			commandLine += getCharFromKeyEvent(e.key);
 		}
+	}
+}
+
+void editBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
+{
+	for (auto& change : changes)
+	{
+
+		if (change.elementType == ElementType::Line)
+		{
+			Line line;
+			line = *(Line *)change.previousValue;
+
+			bool lineFound = false;
+			for (auto& l : info->lines)
+			{
+				if (l.id == line.id)
+				{
+					l = line;
+					lineFound = true;
+					break;
+				}
+			}
+			if (!lineFound)
+			{
+				std::cout << "(2392)Error: moved line was not found" << std::endl;
+			}
+		}
+		else if (change.elementType == ElementType::Circle)
+		{
+			Circle circle;
+			circle = *(Circle *)change.previousValue;
+
+			bool circleFound = false;
+			for (auto& c : info->circles)
+			{
+				if (c.id == circle.id)
+				{
+					c = circle;
+					circleFound = true;
+					break;
+				}
+			}
+			if (!circleFound)
+			{
+				std::cout << "(2392)Error: moved line was not found" << std::endl;
+			}
+		}
+		else if (change.elementType == ElementType::Text)
+		{
+			Text text;
+			text = *(Text *)change.previousValue;
+
+			bool textFound = false;
+			for (auto& t : info->texts)
+			{
+				if (t.id == text.id)
+				{
+					t = text;
+					textFound = true;
+					break;
+				}
+			}
+			if (!textFound)
+			{
+				std::cout << "(2392)Error: moved line was not found" << std::endl;
+			}
+		}
+	}
+}
+
+void createBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
+{
+	for (auto& change : changes)
+	{
+		if (change.elementType == ElementType::Line)
+		{
+			Line line;
+			line = *(Line *)change.previousValue;
+			info->lines.push_back(line);
+		}
+		else if (change.elementType == ElementType::Circle)
+		{
+			Circle circle;
+			circle = *(Circle *)change.previousValue;
+			info->circles.push_back(circle);
+		}
+		else if (change.elementType == ElementType::Text)
+		{
+			Text text;
+			text = *(Text *)change.previousValue;
+			info->texts.push_back(text);
+		}
+	}
+}
+
+void deleteBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
+{
+	for (auto& change : changes)
+	{
+		if (change.elementType == ElementType::Line)
+		{
+			for (int i = info->lines.size()-1; i >= 0; --i)
+			{
+				if (info->lines[i].id == change.elementId)
+				{
+					// remove this line
+					info->lines.erase(info->lines.begin()+i);
+					break;
+				}
+			}
+		}
+		else if (change.elementType == ElementType::Circle)
+		{
+			for (int i = info->circles.size()-1; i >= 0; --i)
+			{
+				if (info->circles[i].id == change.elementId)
+				{
+					// remove this circle
+					info->circles.erase(info->circles.begin()+i);
+					break;
+				}
+			}
+		}
+		else if (change.elementType == ElementType::Text)
+		{
+			for (int i = info->texts.size()-1; i >= 0; --i)
+			{
+				if (info->texts[i].id == change.elementId)
+				{
+					// remove this text
+					info->texts.erase(info->texts.begin()+i);
+					break;
+				}
+			}
+		}
+		else
+		{
+			std::cout << "(4920)Error: Unknown ElementType: " << (int)change.elementType << std::endl;
+		}
+	}
+}
+
+
+void undo(AppInfo *info)
+{
+	if (info->history.timeFrames.size() && info->history.currentHistoryIndex >= 0)
+	{
+		auto& lastTF = info->history.timeFrames[info->history.currentHistoryIndex];
+		if (lastTF.changeType == ChangeType::Create)
+		{
+			auto changes = info->history.collectChangesForTimeFrameIndex(info->history.currentHistoryIndex);
+			deleteBasedOnChanges(info, changes);
+		}
+		else if (lastTF.changeType == ChangeType::Edit)
+		{
+			auto changes = info->history.collectPreviousStateForTimeFrameIndex(info->history.currentHistoryIndex);
+			editBasedOnChanges(info, changes);
+		}
+		else if (lastTF.changeType == ChangeType::Delete)
+		{
+			auto changes = info->history.collectChangesForTimeFrameIndex(info->history.currentHistoryIndex);
+			createBasedOnChanges(info, changes);
+		}
+
+		if (info->history.currentHistoryIndex >= 0)  info->history.currentHistoryIndex--;
+	}
+}
+
+void redo(AppInfo *info)
+{
+	if (info->history.currentHistoryIndex == info->history.timeFrames.size()-1)
+		return;
+
+	info->history.currentHistoryIndex++;
+
+	auto& currentTF = info->history.timeFrames[info->history.currentHistoryIndex];
+	if (currentTF.changeType == ChangeType::Create)
+	{
+		auto changes = info->history.collectChangesForTimeFrameIndex(info->history.currentHistoryIndex);
+		createBasedOnChanges(info, changes);
+	}
+	else if (currentTF.changeType == ChangeType::Edit)
+	{
+		auto changes = info->history.collectChangesForTimeFrameIndex(info->history.currentHistoryIndex);
+		editBasedOnChanges(info, changes);
+	}
+	else if (currentTF.changeType == ChangeType::Delete)
+	{
+		auto changes = info->history.collectChangesForTimeFrameIndex(info->history.currentHistoryIndex);
+		deleteBasedOnChanges(info, changes);
 	}
 }
 
@@ -640,7 +834,30 @@ int main()
 				{
 					if (e.key.code == sf::Keyboard::C && e.key.control)
 					{
+						if (getStateType(app.state) == StateType::Create)     onCreateExit(&app);
+						else if (getStateType(app.state) == StateType::Edit)  onEditExit(&app);
+
 						onCreateEnter(&app);
+						goto EndOfEvent;
+					}
+					else if (e.key.code == sf::Keyboard::Z && e.key.control && !e.key.shift)
+					{
+						if (getStateType(app.state) == StateType::Create)     onCreateExit(&app);
+						else if (getStateType(app.state) == StateType::Edit)  onEditExit(&app);
+
+						onCreateEnter(&app);
+						undo(&app);
+
+						goto EndOfEvent;
+					}
+					else if (e.key.code == sf::Keyboard::Z && e.key.control && e.key.shift)
+					{
+						if (getStateType(app.state) == StateType::Create)     onCreateExit(&app);
+						else if (getStateType(app.state) == StateType::Edit)  onEditExit(&app);
+
+						onCreateEnter(&app);
+						redo(&app);
+
 						goto EndOfEvent;
 					}
 				}

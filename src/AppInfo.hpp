@@ -2,6 +2,7 @@
 
 #include "Elements.hpp"
 #include "Selection.hpp"
+#include "History.hpp"
 
 
 #define _STATE_NUMBER(stateId, state)\
@@ -21,16 +22,17 @@ enum class State
 	CommandLine  = _STATE_NUMBER(StateType::Cmd, 1),
 
 	EPoint                = _STATE_NUMBER(StateType::Edit, 1),
-	EMovingPoint          = _STATE_NUMBER(StateType::Edit, 2),
-	EMovingLine           = _STATE_NUMBER(StateType::Edit, 3),
-	EMovingSelection      = _STATE_NUMBER(StateType::Edit, 4),
-	ESelectElement        = _STATE_NUMBER(StateType::Edit, 5),
-	ESelectEnd            = _STATE_NUMBER(StateType::Edit, 6),
-	ESelectionRectangle   = _STATE_NUMBER(StateType::Edit, 7),
-	EChangingCircleRadius = _STATE_NUMBER(StateType::Edit, 8),
-	EMovingText           = _STATE_NUMBER(StateType::Edit, 9),
-	EMovingCopy           = _STATE_NUMBER(StateType::Edit, 10),
-	EEditText             = _STATE_NUMBER(StateType::Edit, 11),
+	EMovingLinePoint      = _STATE_NUMBER(StateType::Edit, 2),
+	EMovingCirclePoint    = _STATE_NUMBER(StateType::Edit, 3),
+	EMovingLine           = _STATE_NUMBER(StateType::Edit, 4),
+	EMovingSelection      = _STATE_NUMBER(StateType::Edit, 5),
+	ESelectElement        = _STATE_NUMBER(StateType::Edit, 6),
+	ESelectEnd            = _STATE_NUMBER(StateType::Edit, 7),
+	ESelectionRectangle   = _STATE_NUMBER(StateType::Edit, 8),
+	EChangingCircleRadius = _STATE_NUMBER(StateType::Edit, 9),
+	EMovingText           = _STATE_NUMBER(StateType::Edit, 10),
+	EMovingCopy           = _STATE_NUMBER(StateType::Edit, 11),
+	EEditText             = _STATE_NUMBER(StateType::Edit, 12),
 
 	CLine         = _STATE_NUMBER(StateType::Create, 1),
 	CNewLine      = _STATE_NUMBER(StateType::Create, 2),
@@ -51,6 +53,9 @@ struct AppInfo
 	sf::RenderWindow *window;
 	sf::Vector2i windowSize;
 
+	History history;
+	uint64_t elementId = 0;
+
 	// TODO defautlts
 	int characterSize = 30;
 	int gridSize = 64;
@@ -59,7 +64,7 @@ struct AppInfo
 
 	// key pressed
 	bool shiftPressed = false;
-	bool snapping = true;
+	bool snapping     = true;
 
 	sf::Vector2f snappedPos;
 

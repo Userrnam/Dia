@@ -7,7 +7,7 @@ float calcRadius(sf::Vector2f center, sf::Vector2f point)
 	return sqrt(d2(center, point));
 }
 
-void checkText(AppInfo *);
+bool checkText(AppInfo *);
 
 static void handleMouseMove(AppInfo *info, sf::Event& e)
 {
@@ -31,31 +31,49 @@ static void handleButtonPress(AppInfo *info, sf::Event& e)
 	auto pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 	if (info->state == State::CLine)
 	{
+		info->previousState = info->state;
 		info->state = State::CNewLine;
+		info->elementId++;
 
 		info->lines.push_back({});
 		info->lines.back().p[0] = snap(info, pos);
 		info->lines.back().p[1] = info->lines.back().p[0];
+		info->lines.back().id = info->elementId;
 	}
 	else if (info->state == State::CCircle)
 	{
+		info->previousState = info->state;
 		info->state = State::CNewCircle;
+		info->elementId++;
 
 		info->circles.push_back({});
 		info->circles.back().center = snap(info, pos);
 		info->circles.back().radius = 0;
+		info->circles.back().id = info->elementId;
 	}
 	else if (info->state == State::CText || info->state == State::CNewText)
 	{
-		checkText(info);
+		if (checkText(info) && (info->previousState == State::CText || info->previousState == State::CNewText))
+		{
+			Change change;
+			change.elementType = ElementType::Text;
+			change.elementId = info->texts.back().id;
+			change.setPreviousValue(info->texts.back());
 
+			info->history.addChanges({change}, ChangeType::Create);
+		}
+
+		info->previousState = info->state;
 		info->state = State::CNewText;
+		info->elementId++;
+
 		info->texts.push_back({});
 		info->texts.back().text.setFont(info->font);
 		// FIXME add ability to change default character size
 		info->texts.back().text.setCharacterSize(35);
 		info->texts.back().text.setFillColor(sf::Color::Black);
 		info->texts.back().text.setPosition(snap(info, pos));
+		info->texts.back().id = info->elementId;
 	}
 }
 
@@ -69,10 +87,20 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	if (info->state == State::CNewLine)
 	{
 		info->lines.back().p[1] = snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y));
+		info->previousState = info->state;
 		info->state = State::CLine;
 		if (same(info->lines.back().p[0], info->lines.back().p[1]))
 		{
 			info->lines.pop_back();
+		}
+		else
+		{
+			Change change;
+			change.elementType = ElementType::Line;
+			change.elementId = info->lines.back().id;
+			change.setPreviousValue(info->lines.back());
+
+			info->history.addChanges({change}, ChangeType::Create);
 		}
 	}
 	else if (info->state == State::CNewCircle)
@@ -80,10 +108,20 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 		info->circles.back().radius = calcRadius(info->circles.back().center,
 				snap(info, sf::Vector2f(e.mouseButton.x, e.mouseButton.y)));
 
+		info->previousState = info->state;
 		info->state = State::CCircle;
 		if (info->circles.back().radius < EPS)
 		{
 			info->circles.pop_back();
+		}
+		else
+		{
+			Change change;
+			change.elementType = ElementType::Circle;
+			change.elementId = info->circles.back().id;
+			change.setPreviousValue(info->circles.back());
+
+			info->history.addChanges({change}, ChangeType::Create);
 		}
 	}
 }
@@ -94,14 +132,17 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 	{
 		if (e.key.code == sf::Keyboard::L)
 		{
+			info->previousState = info->state;
 			info->state = State::CLine;
 		}
 		else if (e.key.code == sf::Keyboard::C)
 		{
+			info->previousState = info->state;
 			info->state = State::CCircle;
 		}
 		else if (e.key.code == sf::Keyboard::T)
 		{
+			info->previousState = info->state;
 			info->state = State::CText;
 		}
 	}
@@ -155,14 +196,49 @@ void onCreateEvent(AppInfo *info, sf::Event& e) {
 void onCreateEnter(AppInfo *info)
 {
 	info->state = State::CLine;
+	info->previousState = State::CLine;
 }
 
 void onCreateExit(AppInfo *info)
 {
-	checkText(info);
+	// it's there because user can enter <Control-C>
+	// and current mode will be restarted
+	if (checkText(info) && (info->state == State::CText || info->state == State::CNewText))
+	{
+		if (info->history.timeFrames.size() == 0 
+				|| info->history.timeFrames.back().changes.back().elementId != info->texts.back().id)
+		{
+			Change change;
+			change.elementType = ElementType::Text;
+			change.elementId = info->texts.back().id;
+			change.setPreviousValue(info->texts.back());
+
+			info->history.addChanges({change}, ChangeType::Create);
+		}
+	}
+	if (info->state == State::CNewLine)
+	{
+		Change change;
+		change.elementType = ElementType::Line;
+		change.elementId = info->lines.back().id;
+		change.setPreviousValue(info->lines.back());
+
+		info->history.addChanges({change}, ChangeType::Create);
+	}
+	else if (info->state == State::CNewCircle)
+	{
+		Change change;
+		change.elementType = ElementType::Circle;
+		change.elementId = info->circles.back().id;
+		change.setPreviousValue(info->circles.back());
+
+		info->history.addChanges({change}, ChangeType::Create);
+	}
 }
 
-void checkText(AppInfo *info)
+// returns false if text last text was empty
+// or texts is empty
+bool checkText(AppInfo *info)
 {
 	if (info->state == State::CText || info->state == State::CNewText)
 	{
@@ -171,10 +247,15 @@ void checkText(AppInfo *info)
 			if (info->texts.back().text.getString().getSize() == 0)
 			{
 				info->texts.pop_back();
-				return;
+				return false;
 			}
 		}
+		else
+		{
+			return false;
+		}
 	}
+	return true;
 }
 
 

@@ -30,6 +30,9 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 
 		if (f.fail())   return info;
 
+		info.elementId++;
+		line.id = info.elementId;
+
 		info.lines.push_back(line);
 	}
 
@@ -44,6 +47,9 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 		f.read((char*)&circle, sizeof(Circle));
 
 		if (f.fail())   return info;
+
+		info.elementId++;
+		circle.id = info.elementId;
 
 		info.circles.push_back(circle);
 	}
@@ -98,6 +104,9 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 		text.text.setFillColor(sf::Color::Black);
 
 		updateBoundingBox(&text);
+
+		info.elementId++;
+		text.id = info.elementId;
 
 		info.texts.push_back(text);
 	}
