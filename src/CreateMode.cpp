@@ -36,6 +36,8 @@ static void handleButtonPress(AppInfo *info, sf::Event& e)
 		info->elementId++;
 
 		info->lines.push_back({});
+		info->lines.back().width = info->defaults.line.width;
+		info->lines.back().color = info->defaults.line.color;
 		info->lines.back().p[0] = snap(info, pos);
 		info->lines.back().p[1] = info->lines.back().p[0];
 		info->lines.back().id = info->elementId;
@@ -47,6 +49,9 @@ static void handleButtonPress(AppInfo *info, sf::Event& e)
 		info->elementId++;
 
 		info->circles.push_back({});
+		info->circles.back().outlineColor = info->defaults.circle.outlineColor;
+		info->circles.back().color = info->defaults.circle.color;
+		info->circles.back().outlineThickness = info->defaults.circle.outlineThickness;
 		info->circles.back().center = snap(info, pos);
 		info->circles.back().radius = 0;
 		info->circles.back().id = info->elementId;
@@ -70,8 +75,8 @@ static void handleButtonPress(AppInfo *info, sf::Event& e)
 		info->texts.push_back({});
 		info->texts.back().text.setFont(info->font);
 		// FIXME add ability to change default character size
-		info->texts.back().text.setCharacterSize(35);
-		info->texts.back().text.setFillColor(sf::Color::Black);
+		info->texts.back().text.setCharacterSize(info->defaults.text.size);
+		info->texts.back().text.setFillColor(info->defaults.text.color);
 		info->texts.back().text.setPosition(snap(info, pos));
 		info->texts.back().id = info->elementId;
 	}

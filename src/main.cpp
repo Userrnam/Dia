@@ -10,6 +10,7 @@
 #include "Drawer.hpp"
 #include "CommandLine.hpp"
 #include "LoadSave.hpp"
+#include "Defaults.hpp"
 
 const sf::Color gridColor = sf::Color(200, 200, 200, 255);
 
@@ -269,16 +270,16 @@ void handleSet(AppInfo& app, Command& command)
 {
 	if (command.target == Command::Line)
 	{
-		if (command.global)
+		if (command.scope == Command::Global)
 		{
-			if (command.paramType == Command::LineWidth)
+			if (command.paramType == ParamType::LineWidth)
 			{
 				for (auto& line : app.lines)
 				{
 					line.width = command.intParam[0];
 				}
 			}
-			else if (command.paramType == Command::LineColor)
+			else if (command.paramType == ParamType::LineColor)
 			{
 				for (auto& line : app.lines)
 				{
@@ -289,16 +290,30 @@ void handleSet(AppInfo& app, Command& command)
 				}
 			}
 		}
+		else if (command.scope == Command::Defaults)
+		{
+			if (command.paramType == ParamType::LineWidth)
+			{
+				app.defaults.line.width = command.intParam[0];
+			}
+			else if (command.paramType == ParamType::LineColor)
+			{
+				app.defaults.line.color.r = command.intParam[0];
+				app.defaults.line.color.g = command.intParam[1];
+				app.defaults.line.color.b = command.intParam[2];
+				app.defaults.line.color.a = command.intParam[3];
+			}
+		}
 		else
 		{
-			if (command.paramType == Command::LineWidth)
+			if (command.paramType == ParamType::LineWidth)
 			{
 				for (auto& line : app.selection.lines)
 				{
 					line->width = command.intParam[0];
 				}
 			}
-			else if (command.paramType == Command::LineColor)
+			else if (command.paramType == ParamType::LineColor)
 			{
 				for (auto& line : app.selection.lines)
 				{
@@ -312,16 +327,16 @@ void handleSet(AppInfo& app, Command& command)
 	}
 	else if (command.target == Command::Circle)
 	{
-		if (command.global)
+		if (command.scope == Command::Global)
 		{
-			if (command.paramType == Command::CircleBorderWidth)
+			if (command.paramType == ParamType::CircleBorderWidth)
 			{
 				for (auto& circle : app.circles)
 				{
 					circle.outlineThickness = command.intParam[0];
 				}
 			}
-			else if (command.paramType == Command::CircleBorderColor)
+			else if (command.paramType == ParamType::CircleBorderColor)
 			{
 				for (auto& circle : app.circles)
 				{
@@ -331,7 +346,7 @@ void handleSet(AppInfo& app, Command& command)
 					circle.outlineColor.a = command.intParam[3];
 				}
 			}
-			else if (command.paramType == Command::CircleFillColor)
+			else if (command.paramType == ParamType::CircleFillColor)
 			{
 				for (auto& circle : app.circles)
 				{
@@ -342,16 +357,37 @@ void handleSet(AppInfo& app, Command& command)
 				}
 			}
 		}
+		else if (command.scope == Command::Defaults)
+		{
+			if (command.paramType == ParamType::CircleBorderWidth)
+			{
+				app.defaults.circle.outlineThickness = command.intParam[0];
+			}
+			else if (command.paramType == ParamType::CircleBorderColor)
+			{
+				app.defaults.circle.outlineColor.r = command.intParam[0];
+				app.defaults.circle.outlineColor.g = command.intParam[1];
+				app.defaults.circle.outlineColor.b = command.intParam[2];
+				app.defaults.circle.outlineColor.a = command.intParam[3];
+			}
+			else if (command.paramType == ParamType::CircleFillColor)
+			{
+				app.defaults.circle.color.r = command.intParam[0];
+				app.defaults.circle.color.g = command.intParam[1];
+				app.defaults.circle.color.b = command.intParam[2];
+				app.defaults.circle.color.a = command.intParam[3];
+			}
+		}
 		else
 		{
-			if (command.paramType == Command::CircleBorderWidth)
+			if (command.paramType == ParamType::CircleBorderWidth)
 			{
 				for (auto circle : app.selection.circles)
 				{
 					circle->outlineThickness = command.intParam[0];
 				}
 			}
-			else if (command.paramType == Command::CircleBorderColor)
+			else if (command.paramType == ParamType::CircleBorderColor)
 			{
 				for (auto circle : app.selection.circles)
 				{
@@ -361,7 +397,7 @@ void handleSet(AppInfo& app, Command& command)
 					circle->outlineColor.a = command.intParam[3];
 				}
 			}
-			else if (command.paramType == Command::CircleFillColor)
+			else if (command.paramType == ParamType::CircleFillColor)
 			{
 				for (auto circle : app.selection.circles)
 				{
@@ -375,9 +411,9 @@ void handleSet(AppInfo& app, Command& command)
 	}
 	else if (command.target == Command::Text)
 	{
-		if (command.global)
+		if (command.scope == Command::Global)
 		{
-			if (command.paramType == Command::TextSize)
+			if (command.paramType == ParamType::TextSize)
 			{
 				for (auto& text : app.texts)
 				{
@@ -385,15 +421,49 @@ void handleSet(AppInfo& app, Command& command)
 					text.bounding = text.text.getGlobalBounds();
 				}
 			}
+			else if (command.paramType == ParamType::TextColor)
+			{
+				for (auto& text : app.texts)
+				{
+					text.text.setFillColor(sf::Color(command.intParam[0], command.intParam[1],
+								command.intParam[2], command.intParam[3]));
+				}
+			}
+		}
+		else if (command.scope == Command::Defaults)
+		{
+			if (command.paramType == ParamType::TextSize)
+			{
+				for (auto text : app.selection.texts)
+				{
+					app.defaults.text.size = command.intParam[0];
+				}
+			}
+			else if (command.paramType == ParamType::TextColor)
+			{
+				for (auto& text : app.selection.texts)
+				{
+					app.defaults.text.color = sf::Color(command.intParam[0], command.intParam[1],
+								command.intParam[2], command.intParam[3]);
+				}
+			}
 		}
 		else
 		{
-			if (command.paramType == Command::TextSize)
+			if (command.paramType == ParamType::TextSize)
 			{
 				for (auto text : app.selection.texts)
 				{
 					text->text.setCharacterSize(command.intParam[0]);
 					text->bounding = text->text.getGlobalBounds();
+				}
+			}
+			else if (command.paramType == ParamType::TextColor)
+			{
+				for (auto& text : app.selection.texts)
+				{
+					text->text.setFillColor(sf::Color(command.intParam[0], command.intParam[1],
+								command.intParam[2], command.intParam[3]));
 				}
 			}
 		}
@@ -689,6 +759,15 @@ int main()
 
 	app.defaultView = app.camera;
 
+	{
+		bool success;
+		app.defaults = loadDefaults("defaults", &success);
+		if (!success)
+		{
+			app.error = "Failed To Load Defaults From File";
+		}
+	}
+
 	app.font.loadFromFile("resources/Hack-Regular.ttf");
 
 	app.previousState = State::CLine;
@@ -928,7 +1007,7 @@ EndOfEvent:
 
 		window.setView(app.camera);
 
-		if (getStateType(app.state) == StateType::Edit)
+		if (getStateType(app.state) == StateType::Edit || app.state == State::CommandLine)
 			editBeforeDraw(&app);
 
 		drawLines(app.lines, app.window);

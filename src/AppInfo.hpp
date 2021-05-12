@@ -3,6 +3,7 @@
 #include "Elements.hpp"
 #include "Selection.hpp"
 #include "History.hpp"
+#include "Defaults.hpp"
 
 
 #define _STATE_NUMBER(stateId, state)\
@@ -67,6 +68,8 @@ struct AppInfo
 	bool snapping     = true;
 
 	sf::Vector2f snappedPos;
+
+	Defaults defaults;
 
 	// cammera
 	sf::View camera;

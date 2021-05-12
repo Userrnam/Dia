@@ -1,37 +1,24 @@
 #pragma once
 
 #include <string>
-
+#include "SetParser.hpp"
 
 struct Command
 {
-	enum Target
-	{
-		Line, Circle, Text
-	};
-
-	enum Param
-	{
-		LineWidth,
-		LineColor,
-
-		CircleBorderWidth,
-		CircleFillColor,
-		CircleBorderColor,
-
-		TextSize,
-	};
-
 	enum Type
 	{
 		Set, Export, Save, Load
 	};
 
-	bool global;
+	enum Scope
+	{
+		Global, Local, Defaults
+	};
+
+	Scope scope;
 
 	Type type;
-	Target target;
-	Param paramType;
+	ParamType paramType;
 
 	int intParam[4];
 	std::string stringParam[4];
