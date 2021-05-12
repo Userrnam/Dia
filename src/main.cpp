@@ -268,7 +268,7 @@ void handleExport(AppInfo& app, Command& commad)
 
 void handleSet(AppInfo& app, Command& command)
 {
-	if (command.target == Command::Line)
+	if (getTarget(command.paramType) == Target::Line)
 	{
 		if (command.scope == Command::Global)
 		{
@@ -325,7 +325,7 @@ void handleSet(AppInfo& app, Command& command)
 			}
 		}
 	}
-	else if (command.target == Command::Circle)
+	else if (getTarget(command.paramType) == Target::Circle)
 	{
 		if (command.scope == Command::Global)
 		{
@@ -409,7 +409,7 @@ void handleSet(AppInfo& app, Command& command)
 			}
 		}
 	}
-	else if (command.target == Command::Text)
+	else if (getTarget(command.paramType) == Target::Text)
 	{
 		if (command.scope == Command::Global)
 		{
