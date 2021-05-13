@@ -18,7 +18,7 @@ struct Change
 {
 	ElementType elementType;
 	uint64_t elementId;
-	void *previousValue = nullptr;
+	void* previousValue = nullptr;
 
 	template<typename T>
 	void setPreviousValue(const T& val)
@@ -54,54 +54,54 @@ struct History
 	std::vector<Change> collectChangesForTimeFrameIndex(int index)
 	{
 		std::vector<Change> result;
-		auto &tf = timeFrames[index];
+		auto& tf = timeFrames[index];
 
 		for (auto& ec : tf.changes)
 		{
 			result.push_back(elementsChanges[ec.elementId][ec.timelineIndex]);
 		}
-		
+
 		return result;
 	}
 
 	std::vector<Change> collectPreviousStateForTimeFrameIndex(int index)
 	{
 		std::vector<Change> result;
-		auto &tf = timeFrames[index];
+		auto& tf = timeFrames[index];
 
 		for (auto& ec : tf.changes)
 		{
 			if (ec.timelineIndex > 0)
 			{
-				result.push_back(elementsChanges[ec.elementId][ec.timelineIndex-1]);
+				result.push_back(elementsChanges[ec.elementId][ec.timelineIndex - 1]);
 			}
 			else
 			{
 				std::cout << "(3894)Error: element does not have previous state\n";
 			}
 		}
-		
+
 		return result;
 	}
 
 	void addChanges(const std::vector<Change>& changes, ChangeType t)
 	{
-		if (timeFrames.size() > 0 && currentHistoryIndex != timeFrames.size()-1)
+		if (timeFrames.size() > 0 && currentHistoryIndex != timeFrames.size() - 1)
 		{
 			// free previous values
-			for (int i = currentHistoryIndex+1; i < timeFrames.size(); ++i)
+			for (int i = currentHistoryIndex + 1; i < timeFrames.size(); ++i)
 			{
 				for (auto& c : timeFrames[i].changes)
 				{
 					free(elementsChanges[c.elementId][c.timelineIndex].previousValue);
 				}
 			}
-			for (auto& c : timeFrames[currentHistoryIndex+1].changes)
+			for (auto& c : timeFrames[currentHistoryIndex + 1].changes)
 			{
 				elementsChanges[c.elementId].erase(elementsChanges[c.elementId].begin()
-						+ c.timelineIndex, elementsChanges[c.elementId].end());
+					+ c.timelineIndex, elementsChanges[c.elementId].end());
 			}
-			timeFrames.erase(timeFrames.begin()+currentHistoryIndex+1, timeFrames.end());
+			timeFrames.erase(timeFrames.begin() + currentHistoryIndex + 1, timeFrames.end());
 		}
 
 		TimeFrame tf;
@@ -120,14 +120,13 @@ struct History
 			{
 				elementsChanges[ec.elementId] = { change };
 			}
-			ec.timelineIndex = elementsChanges[ec.elementId].size()-1;
+			ec.timelineIndex = elementsChanges[ec.elementId].size() - 1;
 
 			tf.changes.push_back(ec);
 		}
 
 		timeFrames.push_back(tf);
-		
-		currentHistoryIndex = timeFrames.size()-1;
+
+		currentHistoryIndex = timeFrames.size() - 1;
 	}
 };
-

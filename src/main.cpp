@@ -1,5 +1,6 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
+#include <limits.h>
 
 #include "AppInfo.hpp"
 
@@ -15,7 +16,7 @@
 const sf::Color gridColor = sf::Color(200, 200, 200, 255);
 
 
-void drawGrid(AppInfo *info)
+void drawGrid(AppInfo* info)
 {
 	// calculate total number of lines
 	float size = (float)info->gridSize / info->cameraZoom;
@@ -23,7 +24,7 @@ void drawGrid(AppInfo *info)
 	int count_y = info->windowSize.y / size;
 
 	sf::VertexArray va;
-	va.resize(2*(count_x + count_y + 4));
+	va.resize(2 * (count_x + count_y + 4));
 	va.setPrimitiveType(sf::PrimitiveType::Lines);
 
 	int k = 0;
@@ -32,8 +33,8 @@ void drawGrid(AppInfo *info)
 	sf::Vector2f displacement = info->defaultView.getCenter() - info->camera.getCenter();
 	displacement /= info->cameraZoom;
 
-	displacement.x += (float)info->windowSize.x / 2.0f * (1.0f - 1.0f/info->cameraZoom);
-	displacement.y += (float)info->windowSize.y / 2.0f * (1.0f - 1.0f/info->cameraZoom);
+	displacement.x += (float)info->windowSize.x / 2.0f * (1.0f - 1.0f / info->cameraZoom);
+	displacement.y += (float)info->windowSize.y / 2.0f * (1.0f - 1.0f / info->cameraZoom);
 
 	const float acc = 100;
 	float dx = (((int)(displacement.x * acc)) % ((int)(size * acc))) / acc;
@@ -42,32 +43,32 @@ void drawGrid(AppInfo *info)
 	displacement = sf::Vector2f(dx, dy);
 
 	// horizontal lines
-	for (int y = 0; y < count_y+2; ++y)
+	for (int y = 0; y < count_y + 2; ++y)
 	{
 		sf::Vertex v;
 		v.position = sf::Vector2f(-size, size * y);
 		v.position += displacement;
-		v.color    = gridColor;
+		v.color = gridColor;
 		va[k] = v;
 		k++;
 
-		v.position = sf::Vector2f(info->windowSize.x+size, size * y);
+		v.position = sf::Vector2f(info->windowSize.x + size, size * y);
 		v.position += displacement;
 		va[k] = v;
 		k++;
 	}
 
 	// vertical lines
-	for (int x = 0; x < count_x+2; ++x)
+	for (int x = 0; x < count_x + 2; ++x)
 	{
 		sf::Vertex v;
 		v.position = sf::Vector2f(size * x, -size);
 		v.position += displacement;
-		v.color    = gridColor;
-		va[k]      = v;
+		v.color = gridColor;
+		va[k] = v;
 		k++;
 
-		v.position = sf::Vector2f(size * x, info->windowSize.y+size);
+		v.position = sf::Vector2f(size * x, info->windowSize.y + size);
 		v.position += displacement;
 		va[k] = v;
 		k++;
@@ -76,32 +77,32 @@ void drawGrid(AppInfo *info)
 	info->window->draw(va);
 }
 
-std::string getDescription(AppInfo *info)
+std::string getDescription(AppInfo* info)
 {
 	switch (info->state)
 	{
-		case State::None: return "Error: Current State Is None";
-		case State::CommandLine: return "CommandLine";
-		case State::CLine:   case State::CNewLine:     return "Create Line";
-		case State::CCircle: case State::CNewCircle:   return "Create Circle";
-		case State::CText:   case State::CNewText:     return "Create Text";
-		case State::EPoint:                 return "Edit Point";
-		case State::EMovingLinePoint:       return "Edit Line Point";
-		case State::EMovingCirclePoint:     return "Edit Circle Point";
-		case State::EChangingCircleRadius:  return "Change Circle Radius";
-		case State::EMovingText:            return "Moving Text";
-		case State::EMovingLine:            return "Moving Line";
-		case State::ESelectElement:         return "Select Element";
-		case State::ESelectEnd:             return "Select End";
-		case State::ESelectionRectangle:    return "Selection Rectangle";
-		case State::EMovingSelection:       return "Moving Selection";
-		case State::EMovingCopy:            return "Moving Copy";
-		case State::EEditText:              return "Edit Text";
-		default: return "Error: Unhandled State";
+	case State::None: return "Error: Current State Is None";
+	case State::CommandLine: return "CommandLine";
+	case State::CLine:   case State::CNewLine:     return "Create Line";
+	case State::CCircle: case State::CNewCircle:   return "Create Circle";
+	case State::CText:   case State::CNewText:     return "Create Text";
+	case State::EPoint:                 return "Edit Point";
+	case State::EMovingLinePoint:       return "Edit Line Point";
+	case State::EMovingCirclePoint:     return "Edit Circle Point";
+	case State::EChangingCircleRadius:  return "Change Circle Radius";
+	case State::EMovingText:            return "Moving Text";
+	case State::EMovingLine:            return "Moving Line";
+	case State::ESelectElement:         return "Select Element";
+	case State::ESelectEnd:             return "Select End";
+	case State::ESelectionRectangle:    return "Selection Rectangle";
+	case State::EMovingSelection:       return "Moving Selection";
+	case State::EMovingCopy:            return "Moving Copy";
+	case State::EEditText:              return "Edit Text";
+	default: return "Error: Unhandled State";
 	}
 }
 
-void drawAppMode(AppInfo *info)
+void drawAppMode(AppInfo* info)
 {
 	sf::Text text;
 	text.setFont(info->font);
@@ -114,7 +115,7 @@ void drawAppMode(AppInfo *info)
 	info->window->draw(text);
 }
 
-void drawSnappedPoint(AppInfo *info)
+void drawSnappedPoint(AppInfo* info)
 {
 	sf::CircleShape circle;
 	circle.setFillColor(sf::Color::Red);
@@ -124,7 +125,7 @@ void drawSnappedPoint(AppInfo *info)
 	info->window->draw(circle);
 }
 
-void drawGridSize(AppInfo *info)
+void drawGridSize(AppInfo* info)
 {
 	// draw it in top right corner
 	sf::Text text;
@@ -134,12 +135,12 @@ void drawGridSize(AppInfo *info)
 
 	text.setString("Grid Size: " + std::to_string(info->gridSize));
 
-	text.setPosition(info->windowSize.x - text.getGlobalBounds().width-20, 10);
+	text.setPosition(info->windowSize.x - text.getGlobalBounds().width - 20, 10);
 
 	info->window->draw(text);
 }
 
-void drawCommandLine(AppInfo *info, const std::string& commandLine)
+void drawCommandLine(AppInfo* info, const std::string& commandLine)
 {
 	if (commandLine.size())
 	{
@@ -236,8 +237,8 @@ void handleExport(AppInfo& app, Command& commad)
 	}
 
 	float scale = commad.intParam[0] * 0.01;
-	float textureWidth =  (max.x-min.x) * scale + 20;
-	float textureHeight = (max.y-min.y) * scale + 20;
+	float textureWidth = (max.x - min.x) * scale + 20;
+	float textureHeight = (max.y - min.y) * scale + 20;
 
 	sf::RenderTexture renderTexture;
 	if (!renderTexture.create(textureWidth, textureHeight))
@@ -246,7 +247,7 @@ void handleExport(AppInfo& app, Command& commad)
 	}
 
 	sf::Transform transform;
-	min  *= scale;
+	min *= scale;
 	min -= sf::Vector2f(10, 10);
 	transform.translate(-min);
 	transform.scale(scale, scale);
@@ -426,7 +427,7 @@ void handleSet(AppInfo& app, Command& command)
 				for (auto& text : app.texts)
 				{
 					text.text.setFillColor(sf::Color(command.intParam[0], command.intParam[1],
-								command.intParam[2], command.intParam[3]));
+						command.intParam[2], command.intParam[3]));
 				}
 			}
 		}
@@ -444,7 +445,7 @@ void handleSet(AppInfo& app, Command& command)
 				for (auto& text : app.selection.texts)
 				{
 					app.defaults.text.color = sf::Color(command.intParam[0], command.intParam[1],
-								command.intParam[2], command.intParam[3]);
+						command.intParam[2], command.intParam[3]);
 				}
 			}
 		}
@@ -463,7 +464,7 @@ void handleSet(AppInfo& app, Command& command)
 				for (auto& text : app.selection.texts)
 				{
 					text->text.setFillColor(sf::Color(command.intParam[0], command.intParam[1],
-								command.intParam[2], command.intParam[3]));
+						command.intParam[2], command.intParam[3]));
 				}
 			}
 		}
@@ -483,7 +484,7 @@ void handleLoad(AppInfo& app, Command& command)
 		app.error = "Failed To Load " + command.stringParam[0];
 		return;
 	}
-	
+
 	app.lines = info.lines;
 	app.circles = info.circles;
 	app.texts = info.texts;
@@ -550,7 +551,7 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 	}
 }
 
-void editBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
+void editBasedOnChanges(AppInfo* info, const std::vector<Change>& changes)
 {
 	for (auto& change : changes)
 	{
@@ -558,7 +559,7 @@ void editBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
 		if (change.elementType == ElementType::Line)
 		{
 			Line line;
-			line = *(Line *)change.previousValue;
+			line = *(Line*)change.previousValue;
 
 			bool lineFound = false;
 			for (auto& l : info->lines)
@@ -578,7 +579,7 @@ void editBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
 		else if (change.elementType == ElementType::Circle)
 		{
 			Circle circle;
-			circle = *(Circle *)change.previousValue;
+			circle = *(Circle*)change.previousValue;
 
 			bool circleFound = false;
 			for (auto& c : info->circles)
@@ -598,7 +599,7 @@ void editBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
 		else if (change.elementType == ElementType::Text)
 		{
 			Text text;
-			text = *(Text *)change.previousValue;
+			text = *(Text*)change.previousValue;
 
 			bool textFound = false;
 			for (auto& t : info->texts)
@@ -618,67 +619,67 @@ void editBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
 	}
 }
 
-void createBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
+void createBasedOnChanges(AppInfo* info, const std::vector<Change>& changes)
 {
 	for (auto& change : changes)
 	{
 		if (change.elementType == ElementType::Line)
 		{
 			Line line;
-			line = *(Line *)change.previousValue;
+			line = *(Line*)change.previousValue;
 			info->lines.push_back(line);
 		}
 		else if (change.elementType == ElementType::Circle)
 		{
 			Circle circle;
-			circle = *(Circle *)change.previousValue;
+			circle = *(Circle*)change.previousValue;
 			info->circles.push_back(circle);
 		}
 		else if (change.elementType == ElementType::Text)
 		{
 			Text text;
-			text = *(Text *)change.previousValue;
+			text = *(Text*)change.previousValue;
 			info->texts.push_back(text);
 		}
 	}
 }
 
-void deleteBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
+void deleteBasedOnChanges(AppInfo* info, const std::vector<Change>& changes)
 {
 	for (auto& change : changes)
 	{
 		if (change.elementType == ElementType::Line)
 		{
-			for (int i = info->lines.size()-1; i >= 0; --i)
+			for (int i = info->lines.size() - 1; i >= 0; --i)
 			{
 				if (info->lines[i].id == change.elementId)
 				{
 					// remove this line
-					info->lines.erase(info->lines.begin()+i);
+					info->lines.erase(info->lines.begin() + i);
 					break;
 				}
 			}
 		}
 		else if (change.elementType == ElementType::Circle)
 		{
-			for (int i = info->circles.size()-1; i >= 0; --i)
+			for (int i = info->circles.size() - 1; i >= 0; --i)
 			{
 				if (info->circles[i].id == change.elementId)
 				{
 					// remove this circle
-					info->circles.erase(info->circles.begin()+i);
+					info->circles.erase(info->circles.begin() + i);
 					break;
 				}
 			}
 		}
 		else if (change.elementType == ElementType::Text)
 		{
-			for (int i = info->texts.size()-1; i >= 0; --i)
+			for (int i = info->texts.size() - 1; i >= 0; --i)
 			{
 				if (info->texts[i].id == change.elementId)
 				{
 					// remove this text
-					info->texts.erase(info->texts.begin()+i);
+					info->texts.erase(info->texts.begin() + i);
 					break;
 				}
 			}
@@ -691,7 +692,7 @@ void deleteBasedOnChanges(AppInfo *info, const std::vector<Change>& changes)
 }
 
 
-void undo(AppInfo *info)
+void undo(AppInfo* info)
 {
 	if (info->history.timeFrames.size() && info->history.currentHistoryIndex >= 0)
 	{
@@ -716,9 +717,9 @@ void undo(AppInfo *info)
 	}
 }
 
-void redo(AppInfo *info)
+void redo(AppInfo* info)
 {
-	if (info->history.currentHistoryIndex == info->history.timeFrames.size()-1)
+	if (info->history.currentHistoryIndex == info->history.timeFrames.size() - 1)
 		return;
 
 	info->history.currentHistoryIndex++;
@@ -754,14 +755,14 @@ int main()
 	{
 		auto vs = sf::Vector2f(window.getSize());
 		app.camera.setSize(vs);
-		app.camera.setCenter(vs/2.0f);
+		app.camera.setCenter(vs / 2.0f);
 	}
 
 	app.defaultView = app.camera;
 
 	{
 		bool success;
-		app.defaults = loadDefaults("defaults", &success);
+		app.defaults = loadDefaults("defaults.txt", &success);
 		if (!success)
 		{
 			app.error = "Failed To Load Defaults From File";
@@ -788,13 +789,13 @@ int main()
 			{
 				sf::FloatRect visibleArea(0, 0, e.size.width, e.size.height);
 				window.setView(sf::View(visibleArea));
-				
+
 				auto vs = sf::Vector2f(e.size.width, e.size.height);
 				app.defaultView.setSize(vs);
-				app.defaultView.setCenter(vs/2.0f);
+				app.defaultView.setCenter(vs / 2.0f);
 
 				app.camera.setSize(vs * app.cameraZoom);
-				app.camera.setCenter(vs * app.cameraZoom/2.0f);
+				app.camera.setCenter(vs * app.cameraZoom / 2.0f);
 
 				app.windowSize = sf::Vector2i(e.size.width, e.size.height);
 
@@ -816,15 +817,15 @@ int main()
 					goto EndOfEvent;
 				}
 
-				if (e.mouseButton.button == sf::Mouse::Button::Left 
-						&& getStateType(app.state) != StateType::Create)
+				if (e.mouseButton.button == sf::Mouse::Button::Left
+					&& getStateType(app.state) != StateType::Create)
 				{
 					onEditExit(&app);
 					onCreateEnter(&app);
 				}
 
 				if (e.mouseButton.button == sf::Mouse::Button::Right
-						&& getStateType(app.state) != StateType::Edit)
+					&& getStateType(app.state) != StateType::Edit)
 				{
 					onCreateExit(&app);
 					onEditEnter(&app);
@@ -837,7 +838,7 @@ int main()
 				{
 					middleButtonPressed = false;
 					auto current = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
-					app.camera.move(posWhenMiddleButtonPressed-current);
+					app.camera.move(posWhenMiddleButtonPressed - current);
 					goto EndOfEvent;
 				}
 			}
@@ -847,7 +848,7 @@ int main()
 				if (middleButtonPressed)
 				{
 					auto current = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
-					auto v = posWhenMiddleButtonPressed-current;
+					auto v = posWhenMiddleButtonPressed - current;
 					app.camera.move(v * app.cameraZoom);
 					posWhenMiddleButtonPressed = current;
 				}
@@ -954,7 +955,7 @@ int main()
 					}
 					if (e.key.code == sf::Keyboard::Equal)
 					{
-						if (app.gridSize < INT_MAX/2)
+						if (app.gridSize < INT_MAX / 2)
 						{
 							app.gridSize *= 2;
 						}
@@ -988,7 +989,7 @@ int main()
 				}
 				else
 				{
-					std::cout << "(3091)Error: Unexpected Type: "  << (unsigned) getStateType(app.state) << std::endl;
+					std::cout << "(3091)Error: Unexpected Type: " << (unsigned)getStateType(app.state) << std::endl;
 				}
 			}
 			else if (app.state == State::CommandLine)
@@ -997,7 +998,7 @@ int main()
 			}
 		}
 
-EndOfEvent:
+	EndOfEvent:
 
 		window.setView(app.defaultView);
 
@@ -1012,6 +1013,7 @@ EndOfEvent:
 
 		drawLines(app.lines, app.window);
 		drawCircles(app.circles, app.window);
+
 		drawTexts(app.texts, app.window);
 
 		drawSnappedPoint(&app);
@@ -1026,4 +1028,3 @@ EndOfEvent:
 
 	return 0;
 }
-

@@ -102,12 +102,14 @@ bool parseParam(Param& params, std::stringstream& ss)
 	}
 	else if (cmd.find("text") != std::string::npos)
 	{
-		if (cmd.find("size"))
+		if (cmd.find("size") != std::string::npos)
 		{
 			params.type = ParamType::TextSize;
+			//std::count << "HellO" << std::endl;
 			if (!parseInt(ss, params))   return false;
+			//std::count << "LOL" << std::endl;
 		}
-		else if (cmd.find("color"))
+		else if (cmd.find("color") != std::string::npos)
 		{
 			params.type = ParamType::TextColor;
 			if (!parseColor(ss, params)) return false;

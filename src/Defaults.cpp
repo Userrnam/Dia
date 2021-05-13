@@ -15,7 +15,7 @@ bool isWSLine(const std::string& line)
 	return true;
 }
 
-Defaults loadDefaults(const std::string& path, bool *success)
+Defaults loadDefaults(const std::string& path, bool* success)
 {
 	Defaults res;
 	*success = false;
@@ -39,34 +39,34 @@ Defaults loadDefaults(const std::string& path, bool *success)
 
 		switch (params.type)
 		{
-			case ParamType::LineColor:
-				res.line.color = sf::Color(params.intParam[0], params.intParam[1],
-											   params.intParam[2], params.intParam[3]);
-				break;
-			case ParamType::LineWidth:
-				res.line.width = params.intParam[0];
-				break;
+		case ParamType::LineColor:
+			res.line.color = sf::Color(params.intParam[0], params.intParam[1],
+				params.intParam[2], params.intParam[3]);
+			break;
+		case ParamType::LineWidth:
+			res.line.width = params.intParam[0];
+			break;
 
-			case ParamType::CircleFillColor:
-				res.circle.color = sf::Color(params.intParam[0], params.intParam[1],
-											   params.intParam[2], params.intParam[3]);
-				break;
-			case ParamType::CircleBorderColor:
-				res.circle.outlineColor = sf::Color(params.intParam[0], params.intParam[1],
-											   params.intParam[2], params.intParam[3]);
-				break;
-			case ParamType::CircleBorderWidth:
-				res.circle.outlineThickness = params.intParam[0];
-				break;
+		case ParamType::CircleFillColor:
+			res.circle.color = sf::Color(params.intParam[0], params.intParam[1],
+				params.intParam[2], params.intParam[3]);
+			break;
+		case ParamType::CircleBorderColor:
+			res.circle.outlineColor = sf::Color(params.intParam[0], params.intParam[1],
+				params.intParam[2], params.intParam[3]);
+			break;
+		case ParamType::CircleBorderWidth:
+			res.circle.outlineThickness = params.intParam[0];
+			break;
 
-			case ParamType::TextColor:
-				res.text.color = sf::Color(params.intParam[0], params.intParam[1],
-											   params.intParam[2], params.intParam[3]);
-				break;
+		case ParamType::TextColor:
+			res.text.color = sf::Color(params.intParam[0], params.intParam[1],
+				params.intParam[2], params.intParam[3]);
+			break;
 
-			case ParamType::TextSize:
-				res.text.size = params.intParam[0];
-				break;
+		case ParamType::TextSize:
+			res.text.size = params.intParam[0];
+			break;
 		}
 	}
 
@@ -76,4 +76,3 @@ Defaults loadDefaults(const std::string& path, bool *success)
 
 	return res;
 }
-

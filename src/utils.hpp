@@ -1,5 +1,6 @@
 #pragma once
 
+#include <math.h>
 #include "AppInfo.hpp"
 
 #define EPS 1e-4
@@ -31,30 +32,30 @@ inline sf::Vector2f normalize(sf::Vector2f v)
 	return v / l;
 }
 
-inline sf::Vector2f snap(AppInfo *info, sf::Vector2f pos)
+inline sf::Vector2f snap(AppInfo* info, sf::Vector2f pos)
 {
 	sf::Vector2f p;
 
 	if (!info->snapping)   return pos;
 
 	float size = info->gridSize;
-	if (pos.x > 0)  p.x = ((int)(pos.x + size/2) / (int)size) * size;
-	else            p.x = ((int)(pos.x - size/2) / (int)size) * size;
-	if (pos.y > 0)	p.y = ((int)(pos.y + size/2) / (int)size) * size;
-	else	        p.y = ((int)(pos.y - size/2) / (int)size) * size;
+	if (pos.x > 0)  p.x = ((int)(pos.x + size / 2) / (int)size) * size;
+	else            p.x = ((int)(pos.x - size / 2) / (int)size) * size;
+	if (pos.y > 0)	p.y = ((int)(pos.y + size / 2) / (int)size) * size;
+	else	        p.y = ((int)(pos.y - size / 2) / (int)size) * size;
 
 	return p;
 }
 
-sf::Vector2f *getClosestLinePoint(AppInfo *info, sf::Vector2f pos, float *distance2, Line **pline = nullptr);
-Circle *getClosestCircle(AppInfo *info, sf::Vector2f pos, float *distance2);
+sf::Vector2f* getClosestLinePoint(AppInfo* info, sf::Vector2f pos, float* distance2, Line** pline = nullptr);
+Circle* getClosestCircle(AppInfo* info, sf::Vector2f pos, float* distance2);
 
 float d2line(Line& l, sf::Vector2f pos);
-Line *getClosestLine(AppInfo *info, sf::Vector2f pos, float *distance2);
+Line* getClosestLine(AppInfo* info, sf::Vector2f pos, float* distance2);
 
 char getCharFromKeyEvent(sf::Event::KeyEvent& e);
 bool charPrintable(sf::Event::KeyEvent& e);
 
-sf::Vector2f getCharacterSize(const sf::Font *font, int size);
-void updateBoundingBox(Text *text);
+sf::Vector2f getCharacterSize(const sf::Font* font, int size);
+void updateBoundingBox(Text* text);
 

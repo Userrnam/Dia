@@ -5,9 +5,9 @@
 
 enum class Target
 {
-	Line   = 1,
+	Line = 1,
 	Circle = 2,
-	Text   = 3
+	Text = 3
 };
 
 #define _TARGET_NUMBER(stateId, state)\
@@ -15,15 +15,15 @@ enum class Target
 
 enum class ParamType
 {
-	LineWidth,
-	LineColor,
+	LineWidth  = _TARGET_NUMBER(Target::Line, 1),
+	LineColor  = _TARGET_NUMBER(Target::Line, 2),
 
-	CircleBorderWidth,
-	CircleFillColor,
-	CircleBorderColor,
+	CircleBorderWidth = _TARGET_NUMBER(Target::Circle, 1),
+	CircleFillColor   = _TARGET_NUMBER(Target::Circle, 2),
+	CircleBorderColor = _TARGET_NUMBER(Target::Circle, 3),
 
-	TextSize,
-	TextColor,
+	TextSize  = _TARGET_NUMBER(Target::Text, 1),
+	TextColor = _TARGET_NUMBER(Target::Text, 2),
 };
 
 inline Target getTarget(ParamType type)

@@ -15,13 +15,13 @@ struct Selection
 		texts = {};
 	}
 
-	void add(Line *line);
-	void add(Circle *circle);
-	void add(Text *text);
-	
-	bool contains(Line *line);
-	bool contains(Circle *circle);
-	bool contains(Text *text);
+	void add(Line* line);
+	void add(Circle* circle);
+	void add(Text* text);
+
+	bool contains(Line* line);
+	bool contains(Circle* circle);
+	bool contains(Text* text);
 
 	void move(sf::Vector2f vec);
 

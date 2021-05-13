@@ -2,16 +2,16 @@
 #include "utils.hpp"
 
 
-void drawCircles(const std::vector<Circle>& circles, sf::RenderTarget *window, sf::Transform *t)
+void drawCircles(const std::vector<Circle>& circles, sf::RenderTarget* window, sf::Transform* t)
 {
 	sf::CircleShape shape;
 
 	sf::RenderStates states;
 	if (t)   states.transform = *t;
 
-	for (auto &circle : circles)
+	for (auto& circle : circles)
 	{
-		shape.setRadius(circle.radius - circle.outlineThickness/2);
+		shape.setRadius(circle.radius - circle.outlineThickness / 2);
 		shape.setOutlineThickness(circle.outlineThickness);
 		shape.setOutlineColor(circle.outlineColor);
 		shape.setFillColor(circle.color);
@@ -22,7 +22,7 @@ void drawCircles(const std::vector<Circle>& circles, sf::RenderTarget *window, s
 		window->draw(shape, states);
 	}
 }
-void drawLines(const std::vector<Line>& lines, sf::RenderTarget *window, sf::Transform *t)
+void drawLines(const std::vector<Line>& lines, sf::RenderTarget* window, sf::Transform* t)
 {
 	sf::VertexArray va;
 	va.setPrimitiveType(sf::PrimitiveType::Quads);
@@ -37,7 +37,7 @@ void drawLines(const std::vector<Line>& lines, sf::RenderTarget *window, sf::Tra
 		sf::Vector2f normal;
 		normal.x = -(line.p[0] - line.p[1]).y;
 		normal.y = (line.p[0] - line.p[1]).x;
-		normal   = normalize(normal) * line.width/2.0f;
+		normal = normalize(normal) * line.width / 2.0f;
 
 		va[k].color = line.color;
 		va[k].position = line.p[0];
@@ -64,7 +64,7 @@ void drawLines(const std::vector<Line>& lines, sf::RenderTarget *window, sf::Tra
 	window->draw(va, states);
 }
 
-void drawTexts(const std::vector<Text>& texts, sf::RenderTarget *window, bool drawBack, sf::Transform *t)
+void drawTexts(const std::vector<Text>& texts, sf::RenderTarget* window, bool drawBack, sf::Transform* t)
 {
 	sf::RectangleShape rect;
 	rect.setFillColor(sf::Color(170, 170, 0, 50));
@@ -83,4 +83,3 @@ void drawTexts(const std::vector<Text>& texts, sf::RenderTarget *window, bool dr
 		window->draw(t.text, states);
 	}
 }
-

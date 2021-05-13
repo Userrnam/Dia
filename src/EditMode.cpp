@@ -4,26 +4,26 @@
 
 #define MAX_SELECT_DISTANCE 20.0f
 
-const sf::Color selectionColor = sf::Color(70,70,180,90);
+const sf::Color selectionColor = sf::Color(70, 70, 180, 90);
 
-void copyCopyInfoToSelectionAndAppInfo(Selection *selection, AppInfo *info, CopyInfo *copyInfo)
+void copyCopyInfoToSelectionAndAppInfo(Selection* selection, AppInfo* info, CopyInfo* copyInfo)
 {
 	// insure that pointers in selection will be correct
-	info->lines.reserve(info->lines.size()+copyInfo->lines.size()+10);
+	info->lines.reserve(info->lines.size() + copyInfo->lines.size() + 10);
 	for (auto line : copyInfo->lines)
 	{
 		info->lines.push_back(line);
 		selection->lines.push_back(&info->lines.back());
 	}
 
-	info->circles.reserve(info->circles.size()+copyInfo->circles.size()+10);
+	info->circles.reserve(info->circles.size() + copyInfo->circles.size() + 10);
 	for (auto circles : copyInfo->circles)
 	{
 		info->circles.push_back(circles);
 		selection->circles.push_back(&info->circles.back());
 	}
 
-	info->texts.reserve(info->texts.size()+copyInfo->texts.size()+10);
+	info->texts.reserve(info->texts.size() + copyInfo->texts.size() + 10);
 	for (auto text : copyInfo->texts)
 	{
 		info->texts.push_back(text);
@@ -31,24 +31,24 @@ void copyCopyInfoToSelectionAndAppInfo(Selection *selection, AppInfo *info, Copy
 	}
 }
 
-void addTimeFrameFromSelection(AppInfo *info, ChangeType t)
+void addTimeFrameFromSelection(AppInfo* info, ChangeType t)
 {
 	Change change;
 	std::vector<Change> changes;
 
-	change.elementType = ElementType::Line;	
+	change.elementType = ElementType::Line;
 	for (auto element : info->selection.lines)
 	{
 		change.setPreviousValue(*element);
 		changes.push_back(change);
 	}
-	change.elementType = ElementType::Circle;	
+	change.elementType = ElementType::Circle;
 	for (auto element : info->selection.circles)
 	{
 		change.setPreviousValue(*element);
 		changes.push_back(change);
 	}
-	change.elementType = ElementType::Text;	
+	change.elementType = ElementType::Text;
 	for (auto element : info->selection.texts)
 	{
 		change.setPreviousValue(*element);
@@ -58,7 +58,7 @@ void addTimeFrameFromSelection(AppInfo *info, ChangeType t)
 	info->history.addChanges(changes, t);
 }
 
-void copySelectionToCopyInfo(CopyInfo *copyInfo, Selection *selection)
+void copySelectionToCopyInfo(CopyInfo* copyInfo, Selection* selection)
 {
 	for (auto line : selection->lines)
 	{
@@ -76,7 +76,7 @@ void copySelectionToCopyInfo(CopyInfo *copyInfo, Selection *selection)
 	}
 }
 
-void getSelectionFromRectangle(sf::FloatRect selectionRectangle, Selection *selection, AppInfo *info)
+void getSelectionFromRectangle(sf::FloatRect selectionRectangle, Selection* selection, AppInfo* info)
 {
 	for (auto& line : info->lines)
 	{
@@ -88,8 +88,8 @@ void getSelectionFromRectangle(sf::FloatRect selectionRectangle, Selection *sele
 
 	for (auto& circle : info->circles)
 	{
-		if (selectionRectangle.contains(sf::Vector2f(circle.center.x+circle.radius, circle.center.y+circle.radius)) &&
-			selectionRectangle.contains(sf::Vector2f(circle.center.x-circle.radius, circle.center.y-circle.radius)) 
+		if (selectionRectangle.contains(sf::Vector2f(circle.center.x + circle.radius, circle.center.y + circle.radius)) &&
+			selectionRectangle.contains(sf::Vector2f(circle.center.x - circle.radius, circle.center.y - circle.radius))
 			)
 		{
 			selection->add(&circle);
@@ -100,7 +100,7 @@ void getSelectionFromRectangle(sf::FloatRect selectionRectangle, Selection *sele
 	{
 		auto bounds = text.bounding;
 		if (selectionRectangle.contains(sf::Vector2f(bounds.left, bounds.top)) &&
-			selectionRectangle.contains(sf::Vector2f(bounds.left+bounds.width, bounds.top+bounds.height))
+			selectionRectangle.contains(sf::Vector2f(bounds.left + bounds.width, bounds.top + bounds.height))
 			)
 		{
 			selection->add(&text);
@@ -108,7 +108,7 @@ void getSelectionFromRectangle(sf::FloatRect selectionRectangle, Selection *sele
 	}
 }
 
-void removeSelection(Selection *pSelection, AppInfo *info)
+void removeSelection(Selection* pSelection, AppInfo* info)
 {
 	if (pSelection->size() == 0)  return;
 
@@ -124,7 +124,7 @@ void removeSelection(Selection *pSelection, AppInfo *info)
 
 		change.setPreviousValue(info->lines[index]);
 		changes.push_back(change);
-		
+
 		info->lines.erase(info->lines.begin() + index);
 		i++;
 	}
@@ -136,7 +136,7 @@ void removeSelection(Selection *pSelection, AppInfo *info)
 	{
 		change.setPreviousValue(*circle);
 		changes.push_back(change);
-		
+
 		int index = circle - info->circles.data() - i;
 		info->circles.erase(info->circles.begin() + index);
 		i++;
@@ -149,7 +149,7 @@ void removeSelection(Selection *pSelection, AppInfo *info)
 	{
 		change.setPreviousValue(*text);
 		changes.push_back(change);
-		
+
 		int index = text - info->texts.data() - i;
 		info->texts.erase(info->texts.begin() + index);
 		i++;
@@ -160,14 +160,21 @@ void removeSelection(Selection *pSelection, AppInfo *info)
 	pSelection->clear();
 }
 
-static void handleMouseMoveEvent(AppInfo *info, sf::Event& e)
+static void handleMouseMoveEvent(AppInfo* info, sf::Event& e)
 {
 	sf::Vector2f mousePos = sf::Vector2f(e.mouseMove.x, e.mouseMove.y);
 	auto vec = snap(info, mousePos);
 
-	if (info->state == State::EMovingLinePoint || info->state == State::EMovingCirclePoint)
+	if (info->state == State::EMovingLinePoint)
 	{
 		*info->pVec = vec;
+	} 
+	else if (info->state == State::EMovingCirclePoint)
+	{
+		auto move = vec - info->referencePoint; // *info->pVec; // use refference point here
+		auto v = snap(info, *info->pVec + move) - *info->pVec - move;
+		info->referencePoint += move + v;
+		*info->pVec += move + v;
 	}
 	else if (info->state == State::EChangingCircleRadius)
 	{
@@ -175,14 +182,20 @@ static void handleMouseMoveEvent(AppInfo *info, sf::Event& e)
 	}
 	else if (info->state == State::EMovingText)
 	{
-		info->pText->text.setPosition(vec);
+		//info->pText->text.setPosition(vec);
+		auto move = vec - info->referencePoint; // *info->pVec; // use refference point here
+		auto v = snap(info, info->pText->text.getPosition() + move) - info->pText->text.getPosition() - move;
+		info->referencePoint += move + v;
+		info->pText->text.move(move + v);
 		info->pText->bounding = info->pText->text.getGlobalBounds();
 	}
 	else if (info->state == State::EMovingLine)
 	{
-		auto move = vec - *info->pVec;
-		info->pLine->p[0] += move;
-		info->pLine->p[1] += move;
+		auto move = vec - info->referencePoint; // *info->pVec; // use refference point here
+		auto v = snap(info, *info->pVec + move) - *info->pVec - move;
+		info->referencePoint += move + v;
+		info->pLine->p[0] += move + v;
+		info->pLine->p[1] += move + v;
 	}
 	else if (info->state == State::ESelectElement)
 	{
@@ -190,24 +203,28 @@ static void handleMouseMoveEvent(AppInfo *info, sf::Event& e)
 	}
 	else if (info->state == State::ESelectionRectangle)
 	{
-		info->selectionRectangle.width  = mousePos.x - info->selectionRectangle.left;
+		info->selectionRectangle.width = mousePos.x - info->selectionRectangle.left;
 		info->selectionRectangle.height = mousePos.y - info->selectionRectangle.top;
 	}
 	else if (info->state == State::EMovingSelection)
 	{
-		auto mov = vec - info->movingSelectionReferencePoint;
-		info->movingSelectionReferencePoint = vec;
-		info->selection.move(mov);
+		//auto mov = vec - info->movingSelectionReferencePoint;
+		//info->movingSelectionReferencePoint = vec;
+		auto move = vec - info->referencePoint; // *info->pVec; // use refference point here
+		auto v = snap(info, info->movingSelectionReferencePoint + move) - info->movingSelectionReferencePoint - move;
+		info->referencePoint += move + v;
+		info->movingSelectionReferencePoint += move + v;
+		info->selection.move(move + v);
 	}
 	else if (info->state == State::EMovingCopy)
 	{
-		auto mov = vec - info->referencePoint;			
+		auto mov = vec - info->referencePoint;
 		info->referencePoint = vec;
 		info->copyInfo.move(mov);
 	}
 }
 
-static void handleButtonPressed(AppInfo *info, sf::Event& e)
+static void handleButtonPressed(AppInfo* info, sf::Event& e)
 {
 	if (e.mouseButton.button != sf::Mouse::Button::Right)
 		std::cout << "(3240)Error: Unexpected Mouse Button: " << (int)e.mouseButton.button << std::endl;
@@ -218,7 +235,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 
 	sf::Vector2f pos = sf::Vector2f(e.mouseButton.x, e.mouseButton.y);
 	if (info->state == State::EPoint || info->shiftPressed && info->state == State::EMovingSelection
-			|| info->state == State::EEditText || info->state == State::ESelectionRectangle)
+		|| info->state == State::EEditText || info->state == State::ESelectionRectangle)
 	{
 		if (info->state == State::EEditText)
 		{
@@ -233,7 +250,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				change.elementType = ElementType::Text;
 				change.setPreviousValue(*info->selection.texts.back());
 
-				info->history.addChanges({change}, ChangeType::Edit);
+				info->history.addChanges({ change }, ChangeType::Edit);
 			}
 		}
 
@@ -245,6 +262,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				if (info->selection.contains(&t))
 				{
 					info->state = State::EMovingSelection;
+					info->referencePoint = pos;
 					info->movingSelectionReferencePoint = sf::Vector2f(t.bounding.left, t.bounding.top);
 				}
 				else
@@ -254,22 +272,24 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 					info->state = State::ESelectElement;
 					info->possibleNextState = State::EMovingText;
 					info->pText = &t;
+					info->referencePoint = pos;
 				}
 				return;
 			}
 		}
-		
+
 		// check points at the ends of lines
 		{
-			Line *line;
+			Line* line;
 			float dist2;
-			sf::Vector2f *p = getClosestLinePoint(info, pos, &dist2, &line);
+			sf::Vector2f* p = getClosestLinePoint(info, pos, &dist2, &line);
 			auto dmax = MAX_SELECT_DISTANCE * info->cameraZoom;
 			if (dist2 < dmax * dmax)
 			{
 				if (info->selection.contains(line) && info->selection.size() > 1)
 				{
 					info->state = State::EMovingSelection;
+					info->referencePoint = *p;
 					info->movingSelectionReferencePoint = *p;
 					return;
 				}
@@ -278,6 +298,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				info->state = State::EMovingLinePoint;
 				info->pLine = line;
 				info->pVec = p;
+				info->referencePoint = pos;
 				return;
 			}
 		}
@@ -285,13 +306,14 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 		// check circles
 		{
 			float dist2;
-			Circle *circle = getClosestCircle(info, pos, &dist2);
+			Circle* circle = getClosestCircle(info, pos, &dist2);
 			auto dmax = MAX_SELECT_DISTANCE * info->cameraZoom;
 			if (dist2 < dmax * dmax)
 			{
 				if (info->selection.contains(circle) && info->selection.size() > 1)
 				{
 					info->state = State::EMovingSelection;
+					info->referencePoint = pos;
 					info->movingSelectionReferencePoint = circle->center;
 					return;
 				}
@@ -302,6 +324,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				info->possibleNextState = State::EMovingCirclePoint;
 				info->pCircle = circle;
 				info->pVec = &circle->center;
+				info->referencePoint = pos;
 
 				if (info->shiftPressed)
 				{
@@ -314,7 +337,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 		// check line
 		{
 			float dist2;
-			Line *line = getClosestLine(info, pos, &dist2);
+			Line* line = getClosestLine(info, pos, &dist2);
 
 			auto dmax = MAX_SELECT_DISTANCE * info->cameraZoom;
 			if (dist2 < dmax * dmax)
@@ -334,6 +357,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				if (info->selection.contains(line))
 				{
 					info->state = State::EMovingSelection;
+					info->referencePoint = pos;
 					info->movingSelectionReferencePoint = *info->pVec;
 					return;
 				}
@@ -343,6 +367,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 				info->state = State::ESelectElement;
 				info->possibleNextState = State::EMovingLine;
 				info->pLine = line;
+				info->referencePoint = pos; // nocheck
 
 				return;
 			}
@@ -370,7 +395,7 @@ static void handleButtonPressed(AppInfo *info, sf::Event& e)
 	}
 }
 
-static void handleButtonRelease(AppInfo *info, sf::Event& e)
+static void handleButtonRelease(AppInfo* info, sf::Event& e)
 {
 	Change change;
 
@@ -387,7 +412,7 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 			change.setPreviousValue(*info->pCircle);
 		}
 
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		// We could move here to CreateMode
 		info->state = State::EPoint;
@@ -399,7 +424,7 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	{
 		change.elementType = ElementType::Circle;
 		change.setPreviousValue(*info->pCircle);
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		info->state = State::EPoint;
 		info->pCircle = nullptr;
@@ -408,7 +433,7 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	{
 		change.elementType = ElementType::Text;
 		change.setPreviousValue(*info->pText);
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		info->state = State::EPoint;
 		info->pText = nullptr;
@@ -417,7 +442,7 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	{
 		change.elementType = ElementType::Line;
 		change.setPreviousValue(*info->pLine);
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		info->state = State::EPoint;
 		info->pLine = nullptr;
@@ -444,7 +469,7 @@ static void handleButtonRelease(AppInfo *info, sf::Event& e)
 	}
 }
 
-static void handleKeyPress(AppInfo *info, sf::Event& e)
+static void handleKeyPress(AppInfo* info, sf::Event& e)
 {
 	if (info->state != State::EEditText)
 	{
@@ -459,7 +484,7 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 			copySelectionToCopyInfo(&info->copyInfo, &info->selection);
 			info->state = State::EMovingCopy;
 
-			auto mov = info->snappedPos - info->referencePoint;			
+			auto mov = info->snappedPos - info->referencePoint;
 			info->referencePoint = info->snappedPos;
 			info->copyInfo.move(mov);
 		}
@@ -473,7 +498,7 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 	}
 	else
 	{
-		auto *text = info->selection.texts.back();
+		auto* text = info->selection.texts.back();
 		auto s = text->text.getString();
 		if (e.key.code == sf::Keyboard::BackSpace)
 		{
@@ -482,7 +507,7 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 				return;
 			}
 
-			s.erase(s.getSize()-1);
+			s.erase(s.getSize() - 1);
 			text->text.setString(s);
 		}
 
@@ -495,37 +520,37 @@ static void handleKeyPress(AppInfo *info, sf::Event& e)
 	}
 }
 
-void onEditEvent(AppInfo *info, sf::Event& e)
+void onEditEvent(AppInfo* info, sf::Event& e)
 {
 	switch (e.type)
 	{
-		case sf::Event::MouseMoved:
-			handleMouseMoveEvent(info, e);
-			break;
+	case sf::Event::MouseMoved:
+		handleMouseMoveEvent(info, e);
+		break;
 
-		case sf::Event::MouseButtonPressed:
-			handleButtonPressed(info, e);
-			break;
+	case sf::Event::MouseButtonPressed:
+		handleButtonPressed(info, e);
+		break;
 
-		case sf::Event::MouseButtonReleased:
-			handleButtonRelease(info, e);
-			break;
+	case sf::Event::MouseButtonReleased:
+		handleButtonRelease(info, e);
+		break;
 
-		case sf::Event::KeyPressed:
-			handleKeyPress(info, e);
-			break;
+	case sf::Event::KeyPressed:
+		handleKeyPress(info, e);
+		break;
 
-		default: {}
+	default: {}
 	}
 }
 
-void onEditEnter(AppInfo *info)
+void onEditEnter(AppInfo* info)
 {
 	info->state = State::EPoint;
 	info->selection.clear();
 }
 
-void onEditExit(AppInfo *info)
+void onEditExit(AppInfo* info)
 {
 	// copy paste from handleButtonRelease
 	Change change;
@@ -543,7 +568,7 @@ void onEditExit(AppInfo *info)
 			change.setPreviousValue(*info->pCircle);
 		}
 
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		// We could move here to CreateMode
 		info->state = State::EPoint;
@@ -555,7 +580,7 @@ void onEditExit(AppInfo *info)
 	{
 		change.elementType = ElementType::Circle;
 		change.setPreviousValue(*info->pCircle);
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		info->state = State::EPoint;
 		info->pCircle = nullptr;
@@ -564,7 +589,7 @@ void onEditExit(AppInfo *info)
 	{
 		change.elementType = ElementType::Text;
 		change.setPreviousValue(*info->pText);
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		info->state = State::EPoint;
 		info->pText = nullptr;
@@ -573,7 +598,7 @@ void onEditExit(AppInfo *info)
 	{
 		change.elementType = ElementType::Line;
 		change.setPreviousValue(*info->pLine);
-		info->history.addChanges({change}, ChangeType::Edit);
+		info->history.addChanges({ change }, ChangeType::Edit);
 
 		info->state = State::EPoint;
 		info->pLine = nullptr;
@@ -584,7 +609,7 @@ void onEditExit(AppInfo *info)
 
 		info->state = State::EPoint;
 	}
-	
+
 	// copy from handleButtonPressed
 	else if (info->state == State::EEditText)
 	{
@@ -599,10 +624,10 @@ void onEditExit(AppInfo *info)
 			change.elementType = ElementType::Text;
 			change.setPreviousValue(*info->selection.texts.back());
 
-			info->history.addChanges({change}, ChangeType::Edit);
+			info->history.addChanges({ change }, ChangeType::Edit);
 		}
 	}
-	
+
 	if (info->copyInfo.size())
 	{
 		info->selection.clear();
@@ -615,11 +640,11 @@ void onEditExit(AppInfo *info)
 	info->selection.clear();
 }
 
-void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow *window);
-void drawLinesSelection(const std::vector<Line*>& lines, sf::RenderWindow *window);
-void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow *window, bool drawBack=true);
+void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow* window);
+void drawLinesSelection(const std::vector<Line*>& lines, sf::RenderWindow* window);
+void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow* window, bool drawBack = true);
 
-void editBeforeDraw(AppInfo *info)
+void editBeforeDraw(AppInfo* info)
 {
 	if (info->state == State::ESelectionRectangle)
 	{
@@ -642,18 +667,18 @@ void editBeforeDraw(AppInfo *info)
 	drawTexts(info->copyInfo.texts, info->window);
 }
 
-void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow *window)
+void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow* window)
 {
 	sf::CircleShape shape;
 
 	shape.setOutlineColor(selectionColor);
-	shape.setFillColor(sf::Color(0,0,0,0));
+	shape.setFillColor(sf::Color(0, 0, 0, 0));
 
 	for (auto c : circles)
 	{
 		auto& circle = *c;
 
-		shape.setRadius(circle.radius - circle.outlineThickness/2 - 5);
+		shape.setRadius(circle.radius - circle.outlineThickness / 2 - 5);
 		shape.setOutlineThickness(circle.outlineThickness + 10);
 
 		shape.setPosition(circle.center);
@@ -663,21 +688,21 @@ void drawCirclesSelection(const std::vector<Circle*>& circles, sf::RenderWindow 
 	}
 }
 
-void drawLinesSelection(const std::vector<Line*>& lines, sf::RenderWindow *window)
+void drawLinesSelection(const std::vector<Line*>& lines, sf::RenderWindow* window)
 {
 	sf::VertexArray va;
 	va.setPrimitiveType(sf::PrimitiveType::Quads);
 	va.resize(lines.size() * 4);
 
 	int k = 0;
-	for (auto l: lines)
+	for (auto l : lines)
 	{
 		auto& line = *l;
 
 		sf::Vector2f normal;
 		normal.x = -(line.p[0] - line.p[1]).y;
 		normal.y = (line.p[0] - line.p[1]).x;
-		normal   = normalize(normal) * (line.width/2.0f + 5);
+		normal = normalize(normal) * (line.width / 2.0f + 5);
 
 		va[k].color = selectionColor;
 		va[k].position = line.p[0];
@@ -704,16 +729,15 @@ void drawLinesSelection(const std::vector<Line*>& lines, sf::RenderWindow *windo
 	window->draw(va);
 }
 
-void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow *window, bool drawBack)
+void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow* window, bool drawBack)
 {
 	sf::RectangleShape rect;
 	rect.setFillColor(selectionColor);
 
 	for (auto& t : texts)
 	{
-		rect.setPosition(t->bounding.left-5, t->bounding.top-5);
-		rect.setSize(sf::Vector2f(t->bounding.width+10, t->bounding.height+10));
+		rect.setPosition(t->bounding.left - 5, t->bounding.top - 5);
+		rect.setSize(sf::Vector2f(t->bounding.width + 10, t->bounding.height + 10));
 		window->draw(rect);
 	}
 }
-

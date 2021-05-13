@@ -24,5 +24,5 @@ struct Command
 	std::string stringParam[4];
 };
 
-Command parseCommand(const std::string cmd, bool *success);
+Command parseCommand(const std::string cmd, bool* success);
 

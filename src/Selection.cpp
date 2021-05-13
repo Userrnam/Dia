@@ -68,7 +68,7 @@ sf::Vector2f Selection::closestPoint(sf::Vector2f v)
 	return res;
 }
 
-void Selection::add(Line *line)
+void Selection::add(Line* line)
 {
 	for (auto l : lines)
 	{
@@ -78,7 +78,7 @@ void Selection::add(Line *line)
 	lines.push_back(line);
 }
 
-void Selection::add(Circle *circle)
+void Selection::add(Circle* circle)
 {
 	for (auto c : circles)
 	{
@@ -88,7 +88,7 @@ void Selection::add(Circle *circle)
 	circles.push_back(circle);
 }
 
-void Selection::add(Text *text)
+void Selection::add(Text* text)
 {
 	for (auto t : texts)
 	{
@@ -98,7 +98,7 @@ void Selection::add(Text *text)
 	texts.push_back(text);
 }
 
-bool Selection::contains(Line *line)
+bool Selection::contains(Line* line)
 {
 	for (auto l : lines)
 	{
@@ -107,7 +107,7 @@ bool Selection::contains(Line *line)
 	return false;
 }
 
-bool Selection::contains(Circle *circle)
+bool Selection::contains(Circle* circle)
 {
 	for (auto c : circles)
 	{
@@ -116,7 +116,7 @@ bool Selection::contains(Circle *circle)
 	return false;
 }
 
-bool Selection::contains(Text *text)
+bool Selection::contains(Text* text)
 {
 	for (auto t : texts)
 	{

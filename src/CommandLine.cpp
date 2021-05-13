@@ -2,16 +2,29 @@
 
 #include <sstream>
 #include <iostream>
+#include <string.h>
 
 
 static bool handleSet(Command& command, std::stringstream& ss)
 {
 	Param params;
+
+	// this is dumb
+	auto ts = ss.str();
+	std::stringstream newss(ts);
+	std::string first;
+	newss >> first;
+	newss >> first;
+
+	if (first.find("global") != std::string::npos)  command.scope = Command::Global;
+	else if (first.find("defautls") != std::string::npos) command.scope = Command::Defaults;
+	else command.scope = Command::Local;
+
 	if (!parseParam(params, ss))  return false;
 
 	command.paramType = params.type;
 	memcpy(command.intParam, params.intParam, 4 * sizeof(int));
-	
+
 	return true;
 }
 
@@ -30,7 +43,7 @@ static bool handleExport(Command& command, std::stringstream& ss)
 			{
 				command.intParam[0] = std::stoi(word);
 			}
-			catch(...)
+			catch (...)
 			{
 				return false;
 			}
@@ -79,7 +92,7 @@ static bool handleSave(Command& command, std::stringstream& ss)
 	}
 }
 
-Command parseCommand(const std::string cmdLine, bool *success)
+Command parseCommand(const std::string cmdLine, bool* success)
 {
 	Command command;
 
@@ -118,4 +131,3 @@ Command parseCommand(const std::string cmdLine, bool *success)
 
 	return command;
 }
-

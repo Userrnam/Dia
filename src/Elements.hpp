@@ -24,7 +24,7 @@ struct Circle
 	sf::Vector2f center;
 	float radius;
 	sf::Color outlineColor = sf::Color::Black;
-	sf::Color color = sf::Color(0,0,0,0);
+	sf::Color color = sf::Color(0, 0, 0, 0);
 	float outlineThickness = 4;
 };
 

@@ -5,7 +5,7 @@
 
 
 // FIXME allow different fonts
-AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
+AppInfo loadProject(const std::string& path, bool* success, sf::Font* font)
 {
 	AppInfo info;
 
@@ -13,7 +13,7 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 
 	std::fstream f;
 
-	f.open(path, std::ios::in|std::ios::binary);
+	f.open(path, std::ios::in | std::ios::binary);
 
 	if (f.fail())   return info;
 
@@ -65,7 +65,7 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 		std::string s;
 		sf::Vector2f pos;
 		uint32_t textSize;
-		
+
 		// read string size
 		uint32_t stringSize;
 		f.read((char*)&stringSize, sizeof(uint32_t));
@@ -77,7 +77,7 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 
 		union Hack
 		{
-			char *p; const char *cp;
+			char* p; const char* cp;
 		};
 
 		Hack h;
@@ -118,10 +118,10 @@ AppInfo loadProject(const std::string& path, bool *success, sf::Font *font)
 	return info;
 }
 
-bool saveProject(AppInfo *info, const std::string& path)
+bool saveProject(AppInfo* info, const std::string& path)
 {
 	std::fstream f;
-	f.open(path, std::ios::out|std::ios::binary);
+	f.open(path, std::ios::out | std::ios::binary);
 
 	if (f.fail())   return false;
 
@@ -149,7 +149,7 @@ bool saveProject(AppInfo *info, const std::string& path)
 		size = s.size();
 		f.write((char*)&size, sizeof(uint32_t));
 		f.write(s.data(), s.size());
-		
+
 		// save position
 		sf::Vector2f pos = text.text.getPosition();
 		f.write((char*)&pos, sizeof(sf::Vector2f));
@@ -164,4 +164,3 @@ bool saveProject(AppInfo *info, const std::string& path)
 
 	return true;
 }
-
