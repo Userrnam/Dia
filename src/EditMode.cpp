@@ -8,11 +8,15 @@ const sf::Color selectionColor = sf::Color(70, 70, 180, 90);
 
 void copyCopyInfoToSelectionAndAppInfo(Selection* selection, AppInfo* info, CopyInfo* copyInfo)
 {
+	// we also must use different ids for copied elements
+
 	// insure that pointers in selection will be correct
 	info->lines.reserve(info->lines.size() + copyInfo->lines.size() + 10);
 	for (auto line : copyInfo->lines)
 	{
 		info->lines.push_back(line);
+		info->elementId++;
+		info->lines.back().id = info->elementId;
 		selection->lines.push_back(&info->lines.back());
 	}
 
@@ -20,6 +24,8 @@ void copyCopyInfoToSelectionAndAppInfo(Selection* selection, AppInfo* info, Copy
 	for (auto circles : copyInfo->circles)
 	{
 		info->circles.push_back(circles);
+		info->elementId++;
+		info->circles.back().id = info->elementId;
 		selection->circles.push_back(&info->circles.back());
 	}
 
@@ -27,6 +33,8 @@ void copyCopyInfoToSelectionAndAppInfo(Selection* selection, AppInfo* info, Copy
 	for (auto text : copyInfo->texts)
 	{
 		info->texts.push_back(text);
+		info->elementId++;
+		info->texts.back().id = info->elementId;
 		selection->texts.push_back(&info->texts.back());
 	}
 }

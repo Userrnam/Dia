@@ -510,12 +510,17 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 
 			bool success;
 			Command command = parseCommand(commandLine, &success);
-			commandLine = "";
 			if (!success)
 			{
 				app.error = "Failed To Parse Command";
+				commandLine = "";
 				return;
 			}
+
+			// save this command
+			app.cmdHistory.add(commandLine);
+			commandLine = "";
+
 			if (command.type == Command::Set)
 			{
 				handleSet(app, command);
@@ -543,6 +548,14 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 					app.state = app.previousState;
 				}
 			}
+		}
+		else if (e.key.code == sf::Keyboard::Up)
+		{
+			commandLine = app.cmdHistory.prev();
+		}
+		else if (e.key.code == sf::Keyboard::Down)
+		{
+			commandLine = app.cmdHistory.next();
 		}
 		else if (charPrintable(e.key))
 		{
@@ -746,11 +759,14 @@ int main()
 {
 	srand(time(NULL));
 
-	sf::RenderWindow window(sf::VideoMode(defaultWindowSize.x, defaultWindowSize.y), "DATDFWY");
+	auto screenResolution = sf::Vector2i(sf::VideoMode::getDesktopMode().width,
+			sf::VideoMode::getDesktopMode().height);
+
+	sf::RenderWindow window(sf::VideoMode(screenResolution.x/2, screenResolution.y/2), "DATDFWY");
 
 	AppInfo app;
 	app.window = &window;
-	app.windowSize = defaultWindowSize;
+	app.windowSize = (sf::Vector2i)window.getSize();
 
 	{
 		auto vs = sf::Vector2f(window.getSize());

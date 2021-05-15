@@ -48,6 +48,39 @@ inline StateType getStateType(State state)
 	return (StateType)((unsigned)state & 0b111);
 }
 
+struct CommandHistory
+{
+	std::vector<std::string> commands;
+	int nextIndex = 0;
+	void add(const std::string& cmd)
+	{
+		commands.push_back(cmd);
+		nextIndex = commands.size();
+	}
+
+	std::string prev()
+	{
+		nextIndex--;
+		if (nextIndex < 0)
+		{
+			nextIndex = -1;
+			return commands[0];
+		}
+		return commands[nextIndex];
+	}
+
+	std::string next()
+	{
+		nextIndex++;
+		if (nextIndex >= commands.size())
+		{
+			nextIndex = commands.size();
+			return ":";
+		}
+		return commands[nextIndex];
+	}
+};
+
 struct AppInfo
 {
 	// window
@@ -55,6 +88,7 @@ struct AppInfo
 	sf::Vector2i windowSize;
 
 	History history;
+	CommandHistory cmdHistory;
 	uint64_t elementId = 0;
 
 	// TODO defautlts
