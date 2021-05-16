@@ -65,6 +65,7 @@ struct CommandHistory
 		if (nextIndex < 0)
 		{
 			nextIndex = 0;
+			if (commands.size() == 0)  return ":";
 			return commands[0];
 		}
 		return commands[nextIndex];

@@ -82,7 +82,7 @@ std::string getDescription(AppInfo* info)
 	switch (info->state)
 	{
 	case State::None: return "Error: Current State Is None";
-	case State::CommandLine: return "CommandLine";
+	case State::CommandLine: return "Command Line";
 	case State::CLine:   case State::CNewLine:     return "Create Line";
 	case State::CCircle: case State::CNewCircle:   return "Create Circle";
 	case State::CText:   case State::CNewText:     return "Create Text";
@@ -286,6 +286,7 @@ void handleSet(AppInfo& app, Command& command)
 				{
 					line.width = command.intParam[0];
 				}
+
 			}
 			else if (command.paramType == ParamType::LineColor)
 			{
@@ -297,6 +298,18 @@ void handleSet(AppInfo& app, Command& command)
 					line.color.a = command.intParam[3];
 				}
 			}
+
+			// save changes
+			std::vector<Change> changes;
+			Change change;
+			change.elementType = ElementType::Line;
+			for (auto& line : app.lines)
+			{
+				change.elementId = line.id;
+				change.setPreviousValue(line);
+				changes.push_back(change);
+			}
+			app.history.addChanges(changes, ChangeType::Edit);
 		}
 		else if (command.scope == Command::Defaults)
 		{
@@ -331,6 +344,18 @@ void handleSet(AppInfo& app, Command& command)
 					line->color.a = command.intParam[3];
 				}
 			}
+
+			// save changes
+			std::vector<Change> changes;
+			Change change;
+			change.elementType = ElementType::Line;
+			for (auto& line : app.selection.lines)
+			{
+				change.elementId = line->id;
+				change.setPreviousValue(*line);
+				changes.push_back(change);
+			}
+			app.history.addChanges(changes, ChangeType::Edit);
 		}
 	}
 	else if (getTarget(command.paramType) == Target::Circle)
@@ -364,6 +389,18 @@ void handleSet(AppInfo& app, Command& command)
 					circle.color.a = command.intParam[3];
 				}
 			}
+
+			// save changes
+			std::vector<Change> changes;
+			Change change;
+			change.elementType = ElementType::Circle;
+			for (auto& circle : app.circles)
+			{
+				change.elementId = circle.id;
+				change.setPreviousValue(circle);
+				changes.push_back(change);
+			}
+			app.history.addChanges(changes, ChangeType::Edit);
 		}
 		else if (command.scope == Command::Defaults)
 		{
@@ -415,12 +452,25 @@ void handleSet(AppInfo& app, Command& command)
 					circle->color.a = command.intParam[3];
 				}
 			}
+
+			// save changes
+			std::vector<Change> changes;
+			Change change;
+			change.elementType = ElementType::Circle;
+			for (auto& circle : app.selection.circles)
+			{
+				change.elementId = circle->id;
+				change.setPreviousValue(*circle);
+				changes.push_back(change);
+			}
+			app.history.addChanges(changes, ChangeType::Edit);
 		}
 	}
 	else if (getTarget(command.paramType) == Target::Text)
 	{
 		if (command.scope == Command::Global)
 		{
+			bool failed = false;
 			if (command.paramType == ParamType::TextSize)
 			{
 				for (auto& text : app.texts)
@@ -450,7 +500,23 @@ void handleSet(AppInfo& app, Command& command)
 				else
 				{
 					app.error = "Failed To Load Font";
+					failed = true;
 				}
+			}
+
+			if (!failed)
+			{
+				// save changes
+				std::vector<Change> changes;
+				Change change;
+				change.elementType = ElementType::Text;
+				for (auto& text : app.texts)
+				{
+					change.elementId = text.id;
+					change.setPreviousValue(text);
+					changes.push_back(change);
+				}
+				app.history.addChanges(changes, ChangeType::Edit);
 			}
 		}
 		else if (command.scope == Command::Defaults)
@@ -480,6 +546,8 @@ void handleSet(AppInfo& app, Command& command)
 		}
 		else
 		{
+			bool failed = false;
+
 			if (command.paramType == ParamType::TextSize)
 			{
 				for (auto text : app.selection.texts)
@@ -509,7 +577,23 @@ void handleSet(AppInfo& app, Command& command)
 				else
 				{
 					app.error = "Failed To Load Font";
+					failed = true;
 				}
+			}
+
+			if (!failed)
+			{
+				// save changes
+				std::vector<Change> changes;
+				Change change;
+				change.elementType = ElementType::Text;
+				for (auto& text : app.selection.texts)
+				{
+					change.elementId = text->id;
+					change.setPreviousValue(*text);
+					changes.push_back(change);
+				}
+				app.history.addChanges(changes, ChangeType::Edit);
 			}
 		}
 	}
@@ -607,10 +691,12 @@ void handleCommandLine(sf::Event& e, AppInfo& app, TextEdit& commandLine)
 		else if (e.key.code == sf::Keyboard::Up)
 		{
 			commandLine.pText->text.setString(app.cmdHistory.prev());
+			commandLine.setText(commandLine.pText);
 		}
 		else if (e.key.code == sf::Keyboard::Down)
 		{
 			commandLine.pText->text.setString(app.cmdHistory.next());
+			commandLine.setText(commandLine.pText);
 		}
 		else
 		{
