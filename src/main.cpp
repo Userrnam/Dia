@@ -140,20 +140,27 @@ void drawGridSize(AppInfo* info)
 	info->window->draw(text);
 }
 
-void drawCommandLine(AppInfo* info, const std::string& commandLine)
+void drawCommandLine(AppInfo* info, TextEdit& commandLine)
 {
-	if (commandLine.size())
+	if (commandLine.pText->text.getString().getSize())
 	{
-		sf::Text text;
+		auto& text = commandLine.pText->text;
 		text.setFont(*info->defaults.ui.font);
 		text.setCharacterSize(info->defaults.ui.size);
 		text.setFillColor(sf::Color::Black);
 
-		text.setString(commandLine);
-
-		text.setPosition(10, info->windowSize.y - text.getGlobalBounds().top - 50);
-
+		text.setPosition(10, info->windowSize.y - text.getGlobalBounds().height - 50);
 		info->window->draw(text);
+
+		// draw cursor
+
+		auto cursorRect = commandLine.getCursor();
+		sf::RectangleShape shape;
+		shape.setPosition(cursorRect.left, cursorRect.top);
+		shape.setSize(sf::Vector2f(cursorRect.width, cursorRect.height));
+		shape.setFillColor(cursorColor);
+
+		info->window->draw(shape);
 	}
 	else if (info->error.size())
 	{
@@ -556,7 +563,7 @@ void handleSave(AppInfo& app, Command& command)
 	}
 }
 
-void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
+void handleCommandLine(sf::Event& e, AppInfo& app, TextEdit& commandLine)
 {
 	if (e.type == sf::Event::KeyPressed)
 	{
@@ -566,17 +573,19 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 			app.state = app.previousState;
 
 			bool success;
-			Command command = parseCommand(commandLine, &success);
+			Command command = parseCommand(commandLine.pText->text.getString(), &success);
 			if (!success)
 			{
 				app.error = "Failed To Parse Command";
-				commandLine = "";
+				commandLine.pText->text.setString("");
+				commandLine.setText(commandLine.pText);
 				return;
 			}
 
 			// save this command
-			app.cmdHistory.add(commandLine);
-			commandLine = "";
+			app.cmdHistory.add(commandLine.pText->text.getString());
+			commandLine.pText->text.setString("");
+			commandLine.setText(commandLine.pText);
 
 			if (command.type == Command::Set)
 			{
@@ -595,28 +604,21 @@ void handleCommandLine(sf::Event& e, AppInfo& app, std::string& commandLine)
 				handleSave(app, command);
 			}
 		}
-		else if (e.key.code == sf::Keyboard::Backspace)
-		{
-			if (commandLine.size())
-			{
-				commandLine.pop_back();
-				if (commandLine.size() == 0)
-				{
-					app.state = app.previousState;
-				}
-			}
-		}
 		else if (e.key.code == sf::Keyboard::Up)
 		{
-			commandLine = app.cmdHistory.prev();
+			commandLine.pText->text.setString(app.cmdHistory.prev());
 		}
 		else if (e.key.code == sf::Keyboard::Down)
 		{
-			commandLine = app.cmdHistory.next();
+			commandLine.pText->text.setString(app.cmdHistory.next());
 		}
-		else if (charPrintable(e.key))
+		else
 		{
-			commandLine += getCharFromKeyEvent(e.key);
+			commandLine.handleKey(e);
+			if (commandLine.pText->text.getString().getSize() == 0)
+			{
+				app.state = app.previousState;
+			}
 		}
 	}
 }
@@ -872,7 +874,9 @@ int main()
 	bool middleButtonPressed = false;
 	sf::Vector2f posWhenMiddleButtonPressed;
 
-	std::string commandLine;
+	Text text;
+	TextEdit commandLine;
+	commandLine.setText(&text);
 
 	while (window.isOpen())
 	{
@@ -902,7 +906,8 @@ int main()
 				if (app.state == State::CommandLine)
 				{
 					app.state = app.previousState;
-					commandLine = "";
+					commandLine.pText->text.setString("");
+					commandLine.setText(&text);
 				}
 
 				if (e.mouseButton.button == sf::Mouse::Button::Middle)
@@ -987,7 +992,8 @@ int main()
 				{
 					app.previousState = app.state;
 					app.state = State::CommandLine;
-					commandLine = "";
+					commandLine.pText->text.setString("");
+					commandLine.setText(&text);
 					app.error = "";
 				}
 				else if (e.key.code == sf::Keyboard::LShift || e.key.code == sf::Keyboard::RShift)
@@ -1048,7 +1054,7 @@ int main()
 						}
 						goto EndOfEvent;
 					}
-					if (e.key.code == sf::Keyboard::Equal)
+					else if (e.key.code == sf::Keyboard::Equal)
 					{
 						if (app.gridSize < INT_MAX / 2)
 						{
@@ -1056,19 +1062,19 @@ int main()
 						}
 						goto EndOfEvent;
 					}
-					if (e.key.code == sf::Keyboard::Up)
+					else if (e.key.code == sf::Keyboard::Up)
 					{
 						app.camera.move(0, -10);
 					}
-					if (e.key.code == sf::Keyboard::Down)
+					else if (e.key.code == sf::Keyboard::Down)
 					{
 						app.camera.move(0, 10);
 					}
-					if (e.key.code == sf::Keyboard::Left)
+					else if (e.key.code == sf::Keyboard::Left  && app.state != State::EEditText && app.state != State::CNewText)
 					{
 						app.camera.move(-10, 0);
 					}
-					if (e.key.code == sf::Keyboard::Right)
+					else if (e.key.code == sf::Keyboard::Right && app.state != State::EEditText && app.state != State::CNewText)
 					{
 						app.camera.move(10, 0);
 					}
@@ -1105,6 +1111,9 @@ int main()
 
 		if (getStateType(app.state) == StateType::Edit || app.state == State::CommandLine)
 			editBeforeDraw(&app);
+
+		if (app.state == State::CNewText || app.state == State::CommandLine)
+			createBeforeDraw(&app);
 
 		drawLines(app.lines, app.window);
 		drawCircles(app.circles, app.window);

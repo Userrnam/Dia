@@ -501,30 +501,13 @@ static void handleKeyPress(AppInfo* info, sf::Event& e)
 			if (info->selection.size() == 1 && info->selection.texts.size() == 1)
 			{
 				info->state = State::EEditText;
+				info->textEdit.setText(info->selection.texts.back());
 			}
 		}
 	}
 	else
 	{
-		auto* text = info->selection.texts.back();
-		auto s = text->text.getString();
-		if (e.key.code == sf::Keyboard::BackSpace)
-		{
-			if (s.getSize() == 0)
-			{
-				return;
-			}
-
-			s.erase(s.getSize() - 1);
-			text->text.setString(s);
-		}
-
-		if (charPrintable(e.key))
-		{
-			text->text.setString(s + getCharFromKeyEvent(e.key));
-		}
-
-		updateBoundingBox(text);
+		info->textEdit.handleKey(e);
 	}
 }
 
@@ -660,6 +643,16 @@ void editBeforeDraw(AppInfo* info)
 		shape.setPosition(info->selectionRectangle.left, info->selectionRectangle.top);
 		shape.setSize(sf::Vector2f(info->selectionRectangle.width, info->selectionRectangle.height));
 		shape.setFillColor(selectionColor);
+
+		info->window->draw(shape);
+	}
+	else if (info->state == State::EEditText)
+	{
+		auto cursorRect = info->textEdit.getCursor();
+		sf::RectangleShape shape;
+		shape.setPosition(cursorRect.left, cursorRect.top);
+		shape.setSize(sf::Vector2f(cursorRect.width, cursorRect.height));
+		shape.setFillColor(cursorColor);
 
 		info->window->draw(shape);
 	}

@@ -78,6 +78,8 @@ static void handleButtonPress(AppInfo* info, sf::Event& e)
 		info->texts.back().text.setFillColor(info->defaults.text.color);
 		info->texts.back().text.setPosition(snap(info, pos));
 		info->texts.back().id = info->elementId;
+
+		info->textEdit.setText(&info->texts.back());
 	}
 }
 
@@ -152,24 +154,7 @@ static void handleKeyPress(AppInfo* info, sf::Event& e)
 	}
 	else
 	{
-		auto s = info->texts.back().text.getString();
-		if (e.key.code == sf::Keyboard::BackSpace)
-		{
-			if (s.getSize() == 0)
-			{
-				return;
-			}
-
-			s.erase(s.getSize() - 1);
-			info->texts.back().text.setString(s);
-		}
-
-		if (charPrintable(e.key))
-		{
-			info->texts.back().text.setString(s + getCharFromKeyEvent(e.key));
-		}
-
-		updateBoundingBox(&info->texts.back());
+		info->textEdit.handleKey(e);
 	}
 }
 
@@ -205,7 +190,7 @@ void onCreateEnter(AppInfo* info)
 
 void onCreateExit(AppInfo* info)
 {
-	// it's there because user can enter <Control-C>
+	// it's there because user can enter <Control-C> or Escape
 	// and current mode will be restarted
 	if (checkText(info) && (info->state == State::CText || info->state == State::CNewText))
 	{
@@ -261,3 +246,18 @@ bool checkText(AppInfo* info)
 	}
 	return true;
 }
+
+void createBeforeDraw(AppInfo* info)
+{
+	if (info->state == State::CNewText)
+	{
+		auto cursorRect = info->textEdit.getCursor();
+		sf::RectangleShape shape;
+		shape.setPosition(cursorRect.left, cursorRect.top);
+		shape.setSize(sf::Vector2f(cursorRect.width, cursorRect.height));
+		shape.setFillColor(cursorColor);
+
+		info->window->draw(shape);
+	}
+}
+

@@ -4,6 +4,7 @@
 #include "Selection.hpp"
 #include "History.hpp"
 #include "Defaults.hpp"
+#include "TextEdit.hpp"
 
 
 #define _STATE_NUMBER(stateId, state)\
@@ -119,6 +120,8 @@ struct AppInfo
 	State previousState = State::None;
 
 	std::string error;
+
+	TextEdit textEdit;
 
 	// copy paste from EditMode
 	// TODO clean up

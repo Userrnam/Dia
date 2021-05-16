@@ -53,8 +53,8 @@ Circle* getClosestCircle(AppInfo* info, sf::Vector2f pos, float* distance2);
 float d2line(Line& l, sf::Vector2f pos);
 Line* getClosestLine(AppInfo* info, sf::Vector2f pos, float* distance2);
 
-char getCharFromKeyEvent(sf::Event::KeyEvent& e);
-bool charPrintable(sf::Event::KeyEvent& e);
+char getCharFromKeyEvent(const sf::Event::KeyEvent& e);
+bool charPrintable(const sf::Event::KeyEvent& e);
 
 sf::Vector2f getCharacterSize(const sf::Font* font, int size);
 void updateBoundingBox(Text* text);

@@ -3,6 +3,9 @@ all: a.out
 bin/utils.o: src/utils.cpp src/utils.hpp
 	clang++ -c src/utils.cpp -o bin/utils.o -std=c++11 -g
 
+bin/TextEdit.o: src/TextEdit.cpp src/TextEdit.hpp
+	clang++ -c src/TextEdit.cpp -o bin/TextEdit.o -std=c++11 -g
+
 bin/Defaults.o: src/Defaults.cpp src/Defaults.hpp
 	clang++ -c src/Defaults.cpp -o bin/Defaults.o -std=c++11 -g
 
@@ -33,7 +36,7 @@ bin/main.o: src/main.cpp src/utils.hpp src/CreateMode.hpp src/EditMode.hpp src/D
 clean:
 	rm bin/*
 
-a.out: bin/main.o bin/utils.o bin/CreateMode.o bin/EditMode.o bin/Drawer.o bin/CommandLine.o bin/Selection.o bin/LoadSave.o bin/Defaults.o bin/SetParser.o
+a.out: bin/main.o bin/utils.o bin/CreateMode.o bin/EditMode.o bin/Drawer.o bin/CommandLine.o bin/Selection.o bin/LoadSave.o bin/Defaults.o bin/SetParser.o bin/TextEdit.o
 	clang++ -lsfml-graphics -lsfml-window -lsfml-system bin/*.o -o bin/a.out -g
 
 run: a.out

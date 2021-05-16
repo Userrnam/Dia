@@ -96,7 +96,7 @@ Line* getClosestLine(AppInfo* info, sf::Vector2f pos, float* distance2)
 	return l;
 }
 
-char getCharFromKeyEvent(sf::Event::KeyEvent& e)
+char getCharFromKeyEvent(const sf::Event::KeyEvent& e)
 {
 	char c = -1;
 
@@ -188,7 +188,7 @@ char getCharFromKeyEvent(sf::Event::KeyEvent& e)
 	return '?';
 }
 
-bool charPrintable(sf::Event::KeyEvent& e)
+bool charPrintable(const sf::Event::KeyEvent& e)
 {
 	if (sf::Keyboard::A <= e.code && e.code <= sf::Keyboard::Z)
 	{
