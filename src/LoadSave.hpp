@@ -2,6 +2,6 @@
 
 #include "AppInfo.hpp"
 
-AppInfo loadProject(const std::string& path, bool* success, sf::Font* font);
+bool loadProject(const std::string& path, AppInfo *app);
 bool saveProject(AppInfo* info, const std::string& path);
 

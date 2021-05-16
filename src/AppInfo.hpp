@@ -63,7 +63,7 @@ struct CommandHistory
 		nextIndex--;
 		if (nextIndex < 0)
 		{
-			nextIndex = -1;
+			nextIndex = 0;
 			return commands[0];
 		}
 		return commands[nextIndex];
@@ -91,11 +91,11 @@ struct AppInfo
 	CommandHistory cmdHistory;
 	uint64_t elementId = 0;
 
-	// TODO defautlts
-	int characterSize = 30;
 	int gridSize = 64;
-	sf::Font font;
-	sf::Vector2f fontCharSize;
+	std::unordered_map<std::string, sf::Font*> fonts;
+
+//	sf::Font font;
+//	sf::Vector2f fontCharSize;
 
 	// key pressed
 	bool shiftPressed = false;
@@ -141,3 +141,24 @@ struct AppInfo
 	sf::Vector2f point;
 	sf::Vector2f referencePoint;
 };
+
+inline sf::Font *getFont(AppInfo *info, std::string fontName)
+{
+	auto fontId = info->fonts.find(fontName);
+	if (fontId != info->fonts.end())
+	{
+		return fontId->second;
+	}
+
+	sf::Font *font = new sf::Font;
+	if (!font->loadFromFile("resources/" + fontName))
+	{
+		free(font);
+		return nullptr;
+	}
+
+	info->fonts[fontName] = font;
+
+	return font;
+}
+

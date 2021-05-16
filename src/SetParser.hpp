@@ -7,7 +7,8 @@ enum class Target
 {
 	Line = 1,
 	Circle = 2,
-	Text = 3
+	Text = 3,
+	UI = 4
 };
 
 #define _TARGET_NUMBER(stateId, state)\
@@ -24,6 +25,10 @@ enum class ParamType
 
 	TextSize  = _TARGET_NUMBER(Target::Text, 1),
 	TextColor = _TARGET_NUMBER(Target::Text, 2),
+	TextFont  = _TARGET_NUMBER(Target::Text, 3),
+
+	UISize  = _TARGET_NUMBER(Target::UI, 1),
+	UIFont  = _TARGET_NUMBER(Target::UI, 2),
 };
 
 inline Target getTarget(ParamType type)
@@ -35,6 +40,7 @@ struct Param
 {
 	ParamType type;
 	int intParam[4];
+	std::string strParam;
 };
 
 bool parseParam(Param& param, std::stringstream& ss);

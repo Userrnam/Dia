@@ -105,8 +105,8 @@ std::string getDescription(AppInfo* info)
 void drawAppMode(AppInfo* info)
 {
 	sf::Text text;
-	text.setFont(info->font);
-	text.setCharacterSize(info->characterSize);
+	text.setFont(*info->defaults.ui.font);
+	text.setCharacterSize(info->defaults.ui.size);
 	text.setPosition(10, 10);
 	text.setFillColor(sf::Color::Black);
 
@@ -129,8 +129,8 @@ void drawGridSize(AppInfo* info)
 {
 	// draw it in top right corner
 	sf::Text text;
-	text.setFont(info->font);
-	text.setCharacterSize(info->characterSize);
+	text.setFont(*info->defaults.ui.font);
+	text.setCharacterSize(info->defaults.ui.size);
 	text.setFillColor(sf::Color::Black);
 
 	text.setString("Grid Size: " + std::to_string(info->gridSize));
@@ -145,8 +145,8 @@ void drawCommandLine(AppInfo* info, const std::string& commandLine)
 	if (commandLine.size())
 	{
 		sf::Text text;
-		text.setFont(info->font);
-		text.setCharacterSize(info->characterSize);
+		text.setFont(*info->defaults.ui.font);
+		text.setCharacterSize(info->defaults.ui.size);
 		text.setFillColor(sf::Color::Black);
 
 		text.setString(commandLine);
@@ -158,8 +158,8 @@ void drawCommandLine(AppInfo* info, const std::string& commandLine)
 	else if (info->error.size())
 	{
 		sf::Text text;
-		text.setFont(info->font);
-		text.setCharacterSize(info->characterSize);
+		text.setFont(*info->defaults.ui.font);
+		text.setCharacterSize(info->defaults.ui.size);
 		text.setFillColor(sf::Color::Red);
 
 		text.setString(info->error);
@@ -430,22 +430,44 @@ void handleSet(AppInfo& app, Command& command)
 						command.intParam[2], command.intParam[3]));
 				}
 			}
+			else if (command.paramType == ParamType::TextFont)
+			{
+				auto font = getFont(&app, command.stringParam[0]);
+				if (font)
+				{
+					for (auto& text : app.texts)
+					{
+						text.text.setFont(*font);
+					}
+				}
+				else
+				{
+					app.error = "Failed To Load Font";
+				}
+			}
 		}
 		else if (command.scope == Command::Defaults)
 		{
 			if (command.paramType == ParamType::TextSize)
 			{
-				for (auto text : app.selection.texts)
-				{
-					app.defaults.text.size = command.intParam[0];
-				}
+				app.defaults.text.size = command.intParam[0];
 			}
 			else if (command.paramType == ParamType::TextColor)
 			{
-				for (auto& text : app.selection.texts)
+				app.defaults.text.color = sf::Color(command.intParam[0], command.intParam[1],
+					command.intParam[2], command.intParam[3]);
+			}
+			else if (command.paramType == ParamType::TextFont)
+			{
+				auto font = getFont(&app, command.stringParam[0]);
+				if (font)
 				{
-					app.defaults.text.color = sf::Color(command.intParam[0], command.intParam[1],
-						command.intParam[2], command.intParam[3]);
+					app.defaults.text.fontName = command.stringParam[0];
+					app.defaults.text.font = font;
+				}
+				else
+				{
+					app.error = "Failed To Load Font";
 				}
 			}
 		}
@@ -467,6 +489,41 @@ void handleSet(AppInfo& app, Command& command)
 						command.intParam[2], command.intParam[3]));
 				}
 			}
+			else if (command.paramType == ParamType::TextFont)
+			{
+				auto font = getFont(&app, command.stringParam[0]);
+				if (font)
+				{
+					for (auto& text : app.selection.texts)
+					{
+						text->text.setFont(*font);
+					}
+				}
+				else
+				{
+					app.error = "Failed To Load Font";
+				}
+			}
+		}
+	}
+	else if (getTarget(command.paramType) == Target::UI)
+	{
+		if (command.paramType == ParamType::UISize)
+		{
+			app.defaults.ui.size = command.intParam[0];
+		}
+		else if (command.paramType == ParamType::UIFont)
+		{
+			auto font = getFont(&app, command.stringParam[0]);
+			if (font)
+			{
+				app.defaults.ui.fontName = command.stringParam[0];
+				app.defaults.ui.font = font;
+			}
+			else
+			{
+				app.error = "Failed To Load Font";
+			}
 		}
 	}
 	else
@@ -477,18 +534,18 @@ void handleSet(AppInfo& app, Command& command)
 
 void handleLoad(AppInfo& app, Command& command)
 {
-	bool success;
-	AppInfo info = loadProject(command.stringParam[0], &success, &app.font);
-	if (!success)
+	if (!loadProject(command.stringParam[0], &app))
 	{
 		app.error = "Failed To Load " + command.stringParam[0];
 		return;
 	}
 
+	/*
 	app.lines = info.lines;
 	app.circles = info.circles;
 	app.texts = info.texts;
 	app.elementId = app.lines.size() + app.circles.size() + app.texts.size();
+	*/
 }
 
 void handleSave(AppInfo& app, Command& command)
@@ -777,15 +834,37 @@ int main()
 	app.defaultView = app.camera;
 
 	{
-		bool success;
-		app.defaults = loadDefaults("defaults.txt", &success);
-		if (!success)
+		if (!loadDefaults(&app, "defaults.txt"))
 		{
 			app.error = "Failed To Load Defaults From File";
 		}
+		
+		// try to load default font if it was not specified
+		if (!app.defaults.ui.font)
+		{
+			auto font = getFont(&app, app.defaults.ui.fontName);
+			if (font)
+			{
+				app.defaults.ui.font = font;
+			}
+			else
+			{
+				std::cout << "Failed To Load Default Font For UI";
+			}
+		}
+		if (!app.defaults.text.font)
+		{
+			auto font = getFont(&app, app.defaults.text.fontName);
+			if (font)
+			{
+				app.defaults.text.font = font;
+			}
+			else
+			{
+				std::cout << "Failed To Load Default Font For Text";
+			}
+		}
 	}
-
-	app.font.loadFromFile("resources/Hack-Regular.ttf");
 
 	app.previousState = State::CLine;
 	onCreateEnter(&app);
@@ -928,7 +1007,7 @@ int main()
 			{
 				if (e.type == sf::Event::KeyPressed)
 				{
-					if (e.key.code == sf::Keyboard::C && e.key.control)
+					if (e.key.code == sf::Keyboard::C && e.key.control || e.key.code == sf::Keyboard::Escape)
 					{
 						if (getStateType(app.state) == StateType::Create)     onCreateExit(&app);
 						else if (getStateType(app.state) == StateType::Edit)  onEditExit(&app);

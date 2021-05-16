@@ -481,7 +481,7 @@ static void handleKeyPress(AppInfo* info, sf::Event& e)
 {
 	if (info->state != State::EEditText)
 	{
-		if (e.key.code == sf::Keyboard::D)
+		if (e.key.code == sf::Keyboard::D || e.key.code == sf::Keyboard::Delete)
 		{
 			removeSelection(&info->selection, info);
 		}

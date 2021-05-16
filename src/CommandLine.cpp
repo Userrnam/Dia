@@ -16,14 +16,15 @@ static bool handleSet(Command& command, std::stringstream& ss)
 	newss >> first;
 	newss >> first;
 
-	if (first.find("global") != std::string::npos)  command.scope = Command::Global;
-	else if (first.find("defautls") != std::string::npos) command.scope = Command::Defaults;
+	if (first.find("global") != std::string::npos)        command.scope = Command::Global;
+	else if (first.find("defaults") != std::string::npos) command.scope = Command::Defaults;
 	else command.scope = Command::Local;
 
 	if (!parseParam(params, ss))  return false;
 
 	command.paramType = params.type;
 	memcpy(command.intParam, params.intParam, 4 * sizeof(int));
+	command.stringParam[0] = params.strParam;
 
 	return true;
 }

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "AppInfo.hpp"
 #include "SetParser.hpp"
 
 
@@ -15,64 +16,82 @@ bool isWSLine(const std::string& line)
 	return true;
 }
 
-Defaults loadDefaults(const std::string& path, bool* success)
+bool loadDefaults(AppInfo *info, const std::string& path)
 {
-	Defaults res;
-	*success = false;
-
 	std::fstream f;
 	f.open(path, std::ios::in);
 
-	if (f.fail())  return res;
+	if (f.fail())  return  false;
 
 	while (f)
 	{
 		std::string line;
 		std::getline(f, line);
 
+		// comment
+		if (line[0] == '#')  continue;
 		if (isWSLine(line))  continue;
 
 		std::stringstream ss(line);
 
 		Param params;
-		if (!parseParam(params, ss))  return res;
+		if (!parseParam(params, ss))  return false;
 
 		switch (params.type)
 		{
 		case ParamType::LineColor:
-			res.line.color = sf::Color(params.intParam[0], params.intParam[1],
+			info->defaults.line.color = sf::Color(params.intParam[0], params.intParam[1],
 				params.intParam[2], params.intParam[3]);
 			break;
 		case ParamType::LineWidth:
-			res.line.width = params.intParam[0];
+			info->defaults.line.width = params.intParam[0];
 			break;
 
 		case ParamType::CircleFillColor:
-			res.circle.color = sf::Color(params.intParam[0], params.intParam[1],
+			info->defaults.circle.color = sf::Color(params.intParam[0], params.intParam[1],
 				params.intParam[2], params.intParam[3]);
 			break;
 		case ParamType::CircleBorderColor:
-			res.circle.outlineColor = sf::Color(params.intParam[0], params.intParam[1],
+			info->defaults.circle.outlineColor = sf::Color(params.intParam[0], params.intParam[1],
 				params.intParam[2], params.intParam[3]);
 			break;
 		case ParamType::CircleBorderWidth:
-			res.circle.outlineThickness = params.intParam[0];
+			info->defaults.circle.outlineThickness = params.intParam[0];
 			break;
 
 		case ParamType::TextColor:
-			res.text.color = sf::Color(params.intParam[0], params.intParam[1],
+			info->defaults.text.color = sf::Color(params.intParam[0], params.intParam[1],
 				params.intParam[2], params.intParam[3]);
 			break;
-
 		case ParamType::TextSize:
-			res.text.size = params.intParam[0];
+			info->defaults.text.size = params.intParam[0];
+			break;
+		case ParamType::TextFont:
+			{
+				auto font = getFont(info, params.strParam);
+				if (!font)
+					return false;
+				info->defaults.text.fontName = params.strParam;
+				info->defaults.text.font = font;
+			}
+			break;
+
+		case ParamType::UISize:
+			info->defaults.ui.size   = params.intParam[0];
+			break;
+		case ParamType::UIFont:
+			{
+				auto font = getFont(info, params.strParam);
+				if (!font)
+					return false;
+				info->defaults.ui.fontName = params.strParam;
+				info->defaults.ui.font = font;
+			}
 			break;
 		}
 	}
 
 	f.close();
 
-	*success = true;
-
-	return res;
+	return true;
 }

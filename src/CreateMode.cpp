@@ -73,8 +73,7 @@ static void handleButtonPress(AppInfo* info, sf::Event& e)
 		info->elementId++;
 
 		info->texts.push_back({});
-		info->texts.back().text.setFont(info->font);
-		// FIXME add ability to change default character size
+		info->texts.back().text.setFont(*info->defaults.text.font);
 		info->texts.back().text.setCharacterSize(info->defaults.text.size);
 		info->texts.back().text.setFillColor(info->defaults.text.color);
 		info->texts.back().text.setPosition(snap(info, pos));

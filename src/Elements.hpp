@@ -30,7 +30,7 @@ struct Circle
 
 struct Text
 {
-	uint64_t id;
+	uint64_t id   = -1;
 	sf::Text text;
 	sf::FloatRect bounding;
 };

@@ -21,8 +21,17 @@ struct Defaults
 	{
 		int size = 35;
 		sf::Color color;
+		std::string fontName = "Hack-Regular.ttf";
+		sf::Font *font;
 	} text;
+
+	struct
+	{
+		int size = 35;
+		sf::Font *font;
+		std::string fontName = "Hack-Regular.ttf";
+	} ui;
 };
 
-Defaults loadDefaults(const std::string& path, bool* success);
+bool loadDefaults(struct AppInfo *info, const std::string& path);
 

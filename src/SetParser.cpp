@@ -53,6 +53,17 @@ static bool parseColor(std::stringstream& ss, Param& params)
 	return true;
 }
 
+bool parseString(std::stringstream& ss, Param& params)
+{
+	std::string word;
+	if (ss >> word)
+	{
+		params.strParam = word;
+		return true;
+	}
+	return false;
+}
+
 bool parseParam(Param& params, std::stringstream& ss)
 {
 	std::string cmd;
@@ -113,6 +124,28 @@ bool parseParam(Param& params, std::stringstream& ss)
 		{
 			params.type = ParamType::TextColor;
 			if (!parseColor(ss, params)) return false;
+		}
+		else if (cmd.find("font"))
+		{
+			params.type = ParamType::TextFont;
+			if (!parseString(ss, params))  return false;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (cmd.find("ui") != std::string::npos)
+	{
+		if (cmd.find("size") != std::string::npos)
+		{
+			params.type = ParamType::UISize;
+			if (!parseInt(ss, params))  return false;
+		}
+		else if (cmd.find("font"))
+		{
+			params.type = ParamType::UIFont;
+			if (!parseString(ss, params))  return false;
 		}
 		else
 		{
