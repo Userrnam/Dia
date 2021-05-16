@@ -82,7 +82,7 @@ std::string getDescription(AppInfo* info)
 	switch (info->state)
 	{
 	case State::None: return "Error: Current State Is None";
-	case State::CommandLine: return "Command Line";
+	case State::CommandLine: return "CommandLine";
 	case State::CLine:   case State::CNewLine:     return "Create Line";
 	case State::CCircle: case State::CNewCircle:   return "Create Circle";
 	case State::CText:   case State::CNewText:     return "Create Text";
@@ -1148,11 +1148,11 @@ int main()
 						}
 						goto EndOfEvent;
 					}
-					else if (e.key.code == sf::Keyboard::Up)
+					else if (e.key.code == sf::Keyboard::Up   && app.state != State::EEditText && app.state != State::CNewText)
 					{
 						app.camera.move(0, -10);
 					}
-					else if (e.key.code == sf::Keyboard::Down)
+					else if (e.key.code == sf::Keyboard::Down && app.state != State::EEditText && app.state != State::CNewText)
 					{
 						app.camera.move(0, 10);
 					}

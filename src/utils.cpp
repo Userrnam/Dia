@@ -246,7 +246,6 @@ void updateBoundingBox(Text* text)
 	if (text->bounding.height < 10)
 	{
 		text->bounding.height = size.y;
-		text->bounding.top -= size.y;
 	}
 	if (text->bounding.width < 10)
 	{
