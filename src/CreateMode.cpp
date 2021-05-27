@@ -195,6 +195,7 @@ void onCreateExit(AppInfo* info)
 	if (checkText(info) && (info->state == State::CText || info->state == State::CNewText))
 	{
 		if (info->history.timeFrames.size() == 0
+			|| info->history.timeFrames.back().changes.size() == 0
 			|| info->history.timeFrames.back().changes.back().elementId != info->texts.back().id)
 		{
 			Change change;

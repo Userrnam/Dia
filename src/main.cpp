@@ -232,15 +232,12 @@ void handleExport(AppInfo& app, Command& commad)
 
 	for (auto& text : app.texts)
 	{
-		for (int i = 0; i < 2; ++i)
-		{
-			if (text.bounding.left < min.x)  min.x = text.bounding.left;
-			if (text.bounding.top < min.y)   min.y = text.bounding.top;
-			if (text.bounding.left + text.bounding.width > max.x)
-				max.x = text.bounding.left + text.bounding.width;
-			if (text.bounding.top + text.bounding.height > max.y)
-				max.x = text.bounding.top + text.bounding.height;
-		}
+		if (text.bounding.left < min.x)  min.x = text.bounding.left;
+		if (text.bounding.top < min.y)   min.y = text.bounding.top;
+		if (text.bounding.left + text.bounding.width > max.x)
+			max.x = text.bounding.left + text.bounding.width;
+		if (text.bounding.top + text.bounding.height > max.y)
+			max.y = text.bounding.top + text.bounding.height;
 	}
 
 	float scale = commad.intParam[0] * 0.01;
@@ -731,7 +728,7 @@ void editBasedOnChanges(AppInfo* info, const std::vector<Change>& changes)
 			}
 			if (!lineFound)
 			{
-				std::cout << "(2392)Error: moved line was not found" << std::endl;
+				std::cout << "(2393)Error: moved line was not found" << std::endl;
 			}
 		}
 		else if (change.elementType == ElementType::Circle)
@@ -751,7 +748,7 @@ void editBasedOnChanges(AppInfo* info, const std::vector<Change>& changes)
 			}
 			if (!circleFound)
 			{
-				std::cout << "(2392)Error: moved line was not found" << std::endl;
+				std::cout << "(2391)Error: moved circle was not found" << std::endl;
 			}
 		}
 		else if (change.elementType == ElementType::Text)
@@ -771,7 +768,7 @@ void editBasedOnChanges(AppInfo* info, const std::vector<Change>& changes)
 			}
 			if (!textFound)
 			{
-				std::cout << "(2392)Error: moved line was not found" << std::endl;
+				std::cout << "(2392)Error: moved text was not found" << std::endl;
 			}
 		}
 	}
@@ -1076,7 +1073,10 @@ int main()
 			{
 				if (e.key.code == sf::Keyboard::SemiColon && e.key.shift)
 				{
-					app.previousState = app.state;
+					if (getStateType(app.state) == StateType::Create) onCreateExit(&app);
+					if (getStateType(app.state) == StateType::Edit)   onEditExit(&app);
+
+					app.previousState = State::CLine; // app.state;
 					app.state = State::CommandLine;
 					commandLine.pText->text.setString("");
 					commandLine.setText(&text);
