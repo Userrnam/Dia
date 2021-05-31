@@ -1074,9 +1074,8 @@ int main()
 				if (e.key.code == sf::Keyboard::SemiColon && e.key.shift)
 				{
 					if (getStateType(app.state) == StateType::Create) onCreateExit(&app);
-					if (getStateType(app.state) == StateType::Edit)   onEditExit(&app);
 
-					app.previousState = State::CLine; // app.state;
+					app.previousState = app.state;
 					app.state = State::CommandLine;
 					commandLine.pText->text.setString("");
 					commandLine.setText(&text);

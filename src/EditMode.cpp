@@ -193,6 +193,7 @@ static void handleMouseMoveEvent(AppInfo* info, sf::Event& e)
 		//info->pText->text.setPosition(vec);
 		auto move = vec - info->referencePoint; // *info->pVec; // use refference point here
 		auto v = snap(info, info->pText->text.getPosition() + move) - info->pText->text.getPosition() - move;
+
 		info->referencePoint += move + v;
 		info->pText->text.move(move + v);
 		info->pText->bounding = info->pText->text.getGlobalBounds();
@@ -271,7 +272,7 @@ static void handleButtonPressed(AppInfo* info, sf::Event& e)
 				{
 					info->state = State::EMovingSelection;
 					info->referencePoint = pos;
-					info->movingSelectionReferencePoint = sf::Vector2f(t.bounding.left, t.bounding.top);
+					info->movingSelectionReferencePoint = t.text.getPosition(); //sf::Vector2f(t.bounding.left, t.bounding.top);
 				}
 				else
 				{
@@ -280,6 +281,7 @@ static void handleButtonPressed(AppInfo* info, sf::Event& e)
 					info->state = State::ESelectElement;
 					info->possibleNextState = State::EMovingText;
 					info->pText = &t;
+					//info->referencePoint = sf::Vector2f(t.bounding.left, t.bounding.top);
 					info->referencePoint = pos;
 				}
 				return;
@@ -742,3 +744,4 @@ void drawTextsSelection(const std::vector<Text*>& texts, sf::RenderWindow* windo
 		window->draw(rect);
 	}
 }
+

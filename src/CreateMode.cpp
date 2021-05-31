@@ -181,7 +181,6 @@ void onCreateEvent(AppInfo* info, sf::Event& e) {
 	}
 }
 
-
 void onCreateEnter(AppInfo* info)
 {
 	info->state = State::CLine;
@@ -250,6 +249,7 @@ bool checkText(AppInfo* info)
 
 void createBeforeDraw(AppInfo* info)
 {
+	// draw text cursor
 	if (info->state == State::CNewText)
 	{
 		auto cursorRect = info->textEdit.getCursor();
