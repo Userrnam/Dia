@@ -6,7 +6,7 @@ const sf::Color cursorColor = sf::Color(255, 0, 0);
 
 struct TextEdit
 {
-	Text* pText;
+	Text* pText = nullptr;
 	int cursorPos = -1;
 
 	void setText(Text *t)

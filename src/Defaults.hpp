@@ -20,15 +20,15 @@ struct Defaults
 	struct
 	{
 		int size = 35;
-		sf::Color color;
+		sf::Color color = {};
 		std::string fontName = "Hack-Regular.ttf";
-		sf::Font *font;
+		sf::Font *font = nullptr;
 	} text;
 
 	struct
 	{
 		int size = 35;
-		sf::Font *font;
+		sf::Font *font = nullptr;
 		std::string fontName = "Hack-Regular.ttf";
 	} ui;
 };

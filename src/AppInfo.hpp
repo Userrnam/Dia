@@ -85,8 +85,10 @@ struct CommandHistory
 
 struct AppInfo
 {
+	std::string exePath;
+
 	// window
-	sf::RenderWindow* window;
+	sf::RenderWindow* window = nullptr;
 	sf::Vector2i windowSize;
 
 	History history;
@@ -95,9 +97,6 @@ struct AppInfo
 
 	int gridSize = 64;
 	std::unordered_map<std::string, sf::Font*> fonts;
-
-//	sf::Font font;
-//	sf::Vector2f fontCharSize;
 
 	// key pressed
 	bool shiftPressed = false;
@@ -142,8 +141,8 @@ struct AppInfo
 	Text* pText = nullptr;
 	Line* pLine = nullptr;
 
-	sf::Vector2f point;
-	sf::Vector2f referencePoint;
+	sf::Vector2f point = {};
+	sf::Vector2f referencePoint = {};
 };
 
 inline sf::Font *getFont(AppInfo *info, std::string fontName)
@@ -155,7 +154,7 @@ inline sf::Font *getFont(AppInfo *info, std::string fontName)
 	}
 
 	sf::Font *font = new sf::Font;
-	if (!font->loadFromFile("resources/" + fontName))
+	if (!font->loadFromFile(info->exePath + "resources/" + fontName))
 	{
 		free(font);
 		return nullptr;

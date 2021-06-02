@@ -6,18 +6,18 @@
 
 enum class ElementType
 {
-	Line, Text, Circle
+	Line, Text, Circle, None
 };
 
 enum class ChangeType
 {
-	Create, Edit, Delete
+	Create, Edit, Delete, None
 };
 
 struct Change
 {
-	ElementType elementType;
-	uint64_t elementId;
+	ElementType elementType = ElementType::None;
+	uint64_t elementId = (uint64_t)-1;
 	void* previousValue = nullptr;
 
 	template<typename T>
@@ -33,15 +33,15 @@ struct Change
 
 struct ElementChange
 {
-	uint64_t elementId;
-	uint64_t timelineIndex;
+	uint64_t elementId = (uint64_t)-1;
+	uint64_t timelineIndex = (uint64_t)-1;
 };
 
 // if user moves multiple elements at the same time we want
 // to undo them all simultaniously
 struct TimeFrame
 {
-	ChangeType changeType;
+	ChangeType changeType = ChangeType::None;
 	std::vector<ElementChange> changes;
 };
 
@@ -130,3 +130,4 @@ struct History
 		currentHistoryIndex = timeFrames.size() - 1;
 	}
 };
+

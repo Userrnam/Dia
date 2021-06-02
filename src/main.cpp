@@ -627,13 +627,6 @@ void handleLoad(AppInfo& app, Command& command)
 		app.error = "Failed To Load " + command.stringParam[0];
 		return;
 	}
-
-	/*
-	app.lines = info.lines;
-	app.circles = info.circles;
-	app.texts = info.texts;
-	app.elementId = app.lines.size() + app.circles.size() + app.texts.size();
-	*/
 }
 
 void handleSave(AppInfo& app, Command& command)
@@ -897,7 +890,7 @@ void redo(AppInfo* info)
 	}
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	srand(time(NULL));
 
@@ -918,8 +911,28 @@ int main()
 
 	app.defaultView = app.camera;
 
+#ifndef WIN32
+	// get app exe path
 	{
-		if (!loadDefaults(&app, "defaults.txt"))
+		std::string path = std::string(argv[0]);
+		// find last part of path
+		int slashCount = 0;
+		int i;
+		for (i = path.size()-1; i >= 0; --i)
+		{
+			if (path[i] == '/')
+			{
+				slashCount++;
+				if (slashCount == 2)  break;
+			}
+		}
+		path.erase(path.begin()+i+1, path.end());
+		app.exePath = path;
+	}
+#endif
+
+	{
+		if (!loadDefaults(&app, app.exePath + "defaults.txt"))
 		{
 			app.error = "Failed To Load Defaults From File";
 		}
@@ -948,6 +961,15 @@ int main()
 			{
 				std::cout << "Failed To Load Default Font For Text";
 			}
+		}
+	}
+
+	if (argc > 1)
+	{
+		// load specified file
+		if (!loadProject(std::string(argv[1]), &app))
+		{
+			app.error = "Failed To Load " + std::string(argv[1]);
 		}
 	}
 

@@ -16,6 +16,8 @@ enum class Target
 
 enum class ParamType
 {
+	None = 0,
+
 	LineWidth  = _TARGET_NUMBER(Target::Line, 1),
 	LineColor  = _TARGET_NUMBER(Target::Line, 2),
 
@@ -38,7 +40,7 @@ inline Target getTarget(ParamType type)
 
 struct Param
 {
-	ParamType type;
+	ParamType type = ParamType::None;
 	int intParam[4];
 	std::string strParam;
 };

@@ -7,18 +7,18 @@ struct Command
 {
 	enum Type
 	{
-		Set, Export, Save, Load
+		Set, Export, Save, Load, NoneType
 	};
 
 	enum Scope
 	{
-		Global, Local, Defaults
+		Global, Local, Defaults, NoneScope
 	};
 
-	Scope scope;
+	Scope scope = NoneScope;
 
-	Type type;
-	ParamType paramType;
+	Type type = NoneType;
+	ParamType paramType = ParamType::None;
 
 	int intParam[4];
 	std::string stringParam[4];

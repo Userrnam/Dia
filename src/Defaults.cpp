@@ -39,6 +39,10 @@ bool loadDefaults(AppInfo *info, const std::string& path)
 
 		switch (params.type)
 		{
+		case ParamType::None:
+			std::cout << "(7732) Error: ParamType::None\n";
+			break;
+
 		case ParamType::LineColor:
 			info->defaults.line.color = sf::Color(params.intParam[0], params.intParam[1],
 				params.intParam[2], params.intParam[3]);
