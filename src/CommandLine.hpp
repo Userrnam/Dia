@@ -7,7 +7,7 @@ struct Command
 {
 	enum Type
 	{
-		Set, Export, Save, Load, NoneType
+		Set, Export, Save, Load, NoneType, ResetZoom
 	};
 
 	enum Scope
@@ -20,7 +20,8 @@ struct Command
 	Type type = NoneType;
 	ParamType paramType = ParamType::None;
 
-	int intParam[4];
+	int intParam[4] = {};
+	float floatParam[4] = {};
 	std::string stringParam[4];
 };
 

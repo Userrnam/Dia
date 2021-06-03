@@ -24,6 +24,8 @@ static bool handleSet(Command& command, std::stringstream& ss)
 
 	command.paramType = params.type;
 	memcpy(command.intParam, params.intParam, 4 * sizeof(int));
+	memcpy(command.floatParam, params.floatParam, 4 * sizeof(float));
+
 	command.stringParam[0] = params.strParam;
 
 	return true;
@@ -123,6 +125,11 @@ Command parseCommand(const std::string cmdLine, bool* success)
 		{
 			command.type = Command::Save;
 			*success = handleSave(command, ss);
+		}
+		else if (type == ":reset_zoom")
+		{
+			command.type = Command::ResetZoom;
+			*success = true;
 		}
 	}
 	else

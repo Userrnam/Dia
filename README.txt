@@ -34,6 +34,10 @@ option <circle>: fill.color, border.color, border.width
 option <text>: color, size, font
 option <ui>: size, font
 
+:set ux.<ux_option> <value>
+
+ux_option <mouse_wheel_senesetivity>: floating point value (default is 0.01)
+
 example:
 	set line.color 0 0 255  - create selected elements of type <Line> blue
 	set circle.border.width 4
@@ -41,7 +45,8 @@ example:
 
 :load <project>
 :save <project>
-:exprot <file_name.png>
+:export <file_name.png>
+:reset_zoom     - resset camera zoom 
 
 file 'defaults' contains default values for entites in the same format as for :set command
 

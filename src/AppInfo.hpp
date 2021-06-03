@@ -120,6 +120,7 @@ struct AppInfo
 	State previousState = State::None;
 
 	std::string error;
+	float mouseWheelSensetivity = 0.01f;
 
 	TextEdit textEdit;
 

@@ -31,6 +31,11 @@ struct Defaults
 		sf::Font *font = nullptr;
 		std::string fontName = "Hack-Regular.ttf";
 	} ui;
+
+	struct
+	{
+		float mouseWheelSensetivity = 0.01;
+	} ux;
 };
 
 bool loadDefaults(struct AppInfo *info, const std::string& path);

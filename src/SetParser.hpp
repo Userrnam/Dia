@@ -8,7 +8,8 @@ enum class Target
 	Line = 1,
 	Circle = 2,
 	Text = 3,
-	UI = 4
+	UI = 4,
+	UX = 5
 };
 
 #define _TARGET_NUMBER(stateId, state)\
@@ -31,6 +32,8 @@ enum class ParamType
 
 	UISize  = _TARGET_NUMBER(Target::UI, 1),
 	UIFont  = _TARGET_NUMBER(Target::UI, 2),
+
+	UXMouseWheelSensetivity = _TARGET_NUMBER(Target::UX, 1),
 };
 
 inline Target getTarget(ParamType type)
@@ -41,7 +44,8 @@ inline Target getTarget(ParamType type)
 struct Param
 {
 	ParamType type = ParamType::None;
-	int intParam[4];
+	int intParam[4] = {};
+	float floatParam[4] = {};
 	std::string strParam;
 };
 

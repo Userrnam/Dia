@@ -20,6 +20,13 @@ void drawGrid(AppInfo* info)
 {
 	// calculate total number of lines
 	float size = (float)info->gridSize / info->cameraZoom;
+
+	// greed is too small, don't draw it
+	if ((int)(size * 5) == 0)
+	{
+		return;
+	}
+
 	int count_x = info->windowSize.x / size;
 	int count_y = info->windowSize.y / size;
 
@@ -614,6 +621,17 @@ void handleSet(AppInfo& app, Command& command)
 			}
 		}
 	}
+	else if (getTarget(command.paramType) == Target::UX)
+	{
+		if (command.paramType == ParamType::UXMouseWheelSensetivity)
+		{
+			app.mouseWheelSensetivity = command.floatParam[0];
+		}
+		else
+		{
+			app.error = "(4921) Internal Error";
+		}
+	}
 	else
 	{
 		app.error = "(3290) Internal Error";
@@ -676,6 +694,11 @@ void handleCommandLine(sf::Event& e, AppInfo& app, TextEdit& commandLine)
 			else if (command.type == Command::Save)
 			{
 				handleSave(app, command);
+			}
+			else if (command.type == Command::ResetZoom)
+			{
+				app.camera.zoom(1.0 / app.cameraZoom);
+				app.cameraZoom = 1.0;
 			}
 		}
 		else if (e.key.code == sf::Keyboard::Up)
@@ -936,6 +959,8 @@ int main(int argc, char **argv)
 		{
 			app.error = "Failed To Load Defaults From File";
 		}
+
+		app.mouseWheelSensetivity = app.defaults.ux.mouseWheelSensetivity;
 		
 		// try to load default font if it was not specified
 		if (!app.defaults.ui.font)
@@ -1087,7 +1112,7 @@ int main(int argc, char **argv)
 					continue;
 				}
 
-				float val = 1.0f + e.mouseWheel.delta * 0.01f;
+				float val = 1.0f + e.mouseWheel.delta * app.mouseWheelSensetivity;
 				app.cameraZoom *= val;
 				app.camera.zoom(val);
 			}

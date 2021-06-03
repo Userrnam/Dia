@@ -92,6 +92,9 @@ bool loadDefaults(AppInfo *info, const std::string& path)
 				info->defaults.ui.font = font;
 			}
 			break;
+		case ParamType::UXMouseWheelSensetivity:
+			info->defaults.ux.mouseWheelSensetivity = params.floatParam[0];
+			break;
 		}
 	}
 

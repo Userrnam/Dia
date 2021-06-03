@@ -23,6 +23,28 @@ static bool parseInt(std::stringstream& ss, Param& params)
 	return true;
 }
 
+static bool parseFloat(std::stringstream& ss, Param& params)
+{
+	std::string param;
+	if (ss >> param)
+	{
+		try
+		{
+			params.floatParam[0] = std::stof(param);
+		}
+		catch (...)
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	return true;
+}
+
 static bool parseColor(std::stringstream& ss, Param& params)
 {
 	std::string param;
@@ -74,12 +96,12 @@ bool parseParam(Param& params, std::stringstream& ss)
 		if (cmd.find("width") != std::string::npos)
 		{
 			params.type = ParamType::LineWidth;
-			if (!parseInt(ss, params))   return false;
+			return parseInt(ss, params);
 		}
 		else if (cmd.find("color") != std::string::npos)
 		{
 			params.type = ParamType::LineColor;
-			if (!parseColor(ss, params))   return false;
+			return parseColor(ss, params);
 		}
 		else
 		{
@@ -92,19 +114,19 @@ bool parseParam(Param& params, std::stringstream& ss)
 				cmd.find("border") != std::string::npos && cmd.find("width") != std::string::npos)
 		{
 			params.type = ParamType::CircleBorderWidth;
-			if (!parseInt(ss, params))   return false;
+			return parseInt(ss, params);
 		}
 		else if (cmd.find("fillColor") != std::string::npos ||
 				cmd.find("fill") != std::string::npos && cmd.find("color") != std::string::npos)
 		{
 			params.type = ParamType::CircleFillColor;
-			if (!parseColor(ss, params))   return false;
+			return parseColor(ss, params);
 		}
 		else if (cmd.find("borderColor") != std::string::npos ||
 				cmd.find("border") != std::string::npos && cmd.find("color") != std::string::npos)
 		{
 			params.type = ParamType::CircleBorderColor;
-			if (!parseColor(ss, params))   return false;
+			return parseColor(ss, params);
 		}
 		else
 		{
@@ -116,19 +138,17 @@ bool parseParam(Param& params, std::stringstream& ss)
 		if (cmd.find("size") != std::string::npos)
 		{
 			params.type = ParamType::TextSize;
-			//std::count << "HellO" << std::endl;
-			if (!parseInt(ss, params))   return false;
-			//std::count << "LOL" << std::endl;
+			return parseInt(ss, params);
 		}
 		else if (cmd.find("color") != std::string::npos)
 		{
 			params.type = ParamType::TextColor;
-			if (!parseColor(ss, params)) return false;
+			return parseColor(ss, params);
 		}
 		else if (cmd.find("font"))
 		{
 			params.type = ParamType::TextFont;
-			if (!parseString(ss, params))  return false;
+			return parseString(ss, params);
 		}
 		else
 		{
@@ -140,17 +160,26 @@ bool parseParam(Param& params, std::stringstream& ss)
 		if (cmd.find("size") != std::string::npos)
 		{
 			params.type = ParamType::UISize;
-			if (!parseInt(ss, params))  return false;
+			return parseInt(ss, params);
 		}
 		else if (cmd.find("font"))
 		{
 			params.type = ParamType::UIFont;
-			if (!parseString(ss, params))  return false;
+			return parseString(ss, params);
 		}
 		else
 		{
 			return false;
 		}
+	}
+	else if (cmd.find("ux") != std::string::npos)
+	{
+		if (cmd.find("mouse_wheel_sensetivity") != std::string::npos)
+		{
+			params.type = ParamType::UXMouseWheelSensetivity;
+			return parseFloat(ss, params);
+		}
+		return false;
 	}
 	else
 	{
