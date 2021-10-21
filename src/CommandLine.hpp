@@ -7,7 +7,7 @@ struct Command
 {
 	enum Type
 	{
-		Set, Export, Save, Load, NoneType, ResetZoom
+		Set, Export, Save, Load, NoneType, ResetZoom,
 	};
 
 	enum Scope

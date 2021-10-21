@@ -87,6 +87,8 @@ struct AppInfo
 {
 	std::string exePath;
 
+	std::string projectName = "__Unnamed.dia";
+
 	// window
 	sf::RenderWindow* window = nullptr;
 	sf::Vector2i windowSize;
@@ -145,6 +147,11 @@ struct AppInfo
 	sf::Vector2f point = {};
 	sf::Vector2f referencePoint = {};
 };
+
+inline int totalObjectCount(AppInfo* info)
+{
+	return info->lines.size() + info->circles.size() + info->texts.size();
+}
 
 inline sf::Font *getFont(AppInfo *info, std::string fontName)
 {

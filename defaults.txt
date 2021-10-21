@@ -1,10 +1,10 @@
 line.color 0 0 0
-line.width 4
+line.width 6
 
 circle.fill.color 0 0 0 0
 circle.border.color 0 0 0
-circle.border.width 4
+circle.border.width 6
 
-text.size 35
+text.size 50
 text.color 0 0 0
 

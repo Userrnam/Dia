@@ -996,6 +996,10 @@ int main(int argc, char **argv)
 		{
 			app.error = "Failed To Load " + std::string(argv[1]);
 		}
+		else
+		{
+			app.projectName = std::string(argv[1]);
+		}
 	}
 
 	app.previousState = State::CLine;
@@ -1260,6 +1264,12 @@ int main(int argc, char **argv)
 		drawCommandLine(&app, commandLine);
 
 		window.display();
+	}
+
+	// save project if it's not empty and not saved (prefixed with _)
+	if (totalObjectCount(&app)) 
+	{
+		saveProject(&app, "_" + app.projectName);
 	}
 
 	return 0;
