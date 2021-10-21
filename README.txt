@@ -1,3 +1,7 @@
+This is a simple program for drawing diagrams. I used it for drawing logical schemes.
+
+Usage:
+
 control-z - undo
 control-shift-z - redo
 hold alt to disable snapping
