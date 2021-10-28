@@ -1,0 +1,10 @@
+line.color 0 0 0
+line.width 4
+
+circle.fill.color 0 0 0 0
+circle.border.color 0 0 0
+circle.border.width 4
+
+text.size 35
+text.color 0 0 0
+
