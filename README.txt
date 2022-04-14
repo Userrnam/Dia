@@ -1,6 +1,6 @@
 This is a simple program for drawing diagrams. I used it for drawing logical schemes.
 
-![<img src="https://github.com/Userrnam/Dia/blob/master/example_image.png" />](https://github.com/Userrnam/Dia/blob/master/example_image.png)
+![example_image](example_image.png)
 
 Usage:
 
