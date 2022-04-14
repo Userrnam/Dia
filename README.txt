@@ -1,5 +1,7 @@
 This is a simple program for drawing diagrams. I used it for drawing logical schemes.
 
+![alt text](https://github.com/Userrnam/Dia/blob/master/example_image.png?raw=true)
+
 Usage:
 
 control-z - undo
