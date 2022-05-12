@@ -1,0 +1,5 @@
+﻿  Generating code
+  Previous IPDB not found, fall back to full compilation.
+  All 1849 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Dia.vcxproj -> C:\Users\Anton\source\repos\Dia\x64\Release\Dia.exe
