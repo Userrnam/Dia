@@ -934,7 +934,7 @@ int main(int argc, char **argv)
 
 	app.defaultView = app.camera;
 
-#ifndef WIN32
+#ifndef _WIN32
 	// get app exe path
 	{
 		std::string path = std::string(argv[0]);
