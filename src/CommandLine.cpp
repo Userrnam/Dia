@@ -16,7 +16,7 @@ static bool handleSet(Command& command, std::stringstream& ss)
 	newss >> first;
 	newss >> first;
 
-	if (first.find("global") != std::string::npos)        command.scope = Command::Global;
+	if (first.find("global") != std::string::npos)       command.scope = Command::Global;
 	else if (first.find("default") != std::string::npos) command.scope = Command::Defaults;
 	else command.scope = Command::Local;
 

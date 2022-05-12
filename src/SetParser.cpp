@@ -145,7 +145,7 @@ bool parseParam(Param& params, std::stringstream& ss)
 			params.type = ParamType::TextColor;
 			return parseColor(ss, params);
 		}
-		else if (cmd.find("font"))
+		else if (cmd.find("font") != std::string::npos)
 		{
 			params.type = ParamType::TextFont;
 			return parseString(ss, params);
@@ -162,7 +162,7 @@ bool parseParam(Param& params, std::stringstream& ss)
 			params.type = ParamType::UISize;
 			return parseInt(ss, params);
 		}
-		else if (cmd.find("font"))
+		else if (cmd.find("font") != std::string::npos)
 		{
 			params.type = ParamType::UIFont;
 			return parseString(ss, params);
